@@ -232,8 +232,8 @@ class LldpManager(object):
         log_error("generate_pending_lldp_config_dot1q_tlv {}".format(self.port_vlan_dict[port_key]))
         vlan_id = self.port_vlan_dict[port_key]["pvid"]
         if  vlan_id != 0:
+            name = "%02x,%02x"%(vlan_id/256, vlan_id%256)
             if self.port_vlan_dict[port_key]["name_tlv_en"] == '1' :
-                name = "test"
                 lldpcli_cmd = " lldpcli configure ports {} lldp custom-tlv replace oui 00,80,c2".format(port_key)
                 lldpcli_cmd += " subtype 3 oui-info '{}'".format(name)
             else:
@@ -242,7 +242,7 @@ class LldpManager(object):
             self.pending_cmds.setdefault(port_key,[]).append(lldpcli_cmd)
             if self.port_vlan_dict[port_key]["pvid_tlv_en"] == '1' :
                 lldpcli_cmd = " lldpcli configure ports {} lldp custom-tlv replace oui 00,80,c2".format(port_key)
-                lldpcli_cmd += " subtype 1 oui-info {}".format(port_key, vlan_id)
+                lldpcli_cmd += " subtype 1 oui-info {}".format(name)
             else:
                 lldpcli_cmd = " lldpcli unconfigure ports {} lldp custom-tlv oui 00,80,c2 subtype 1".format(port_key)
             self.pending_cmds.setdefault(port_key,[]).append(lldpcli_cmd)
