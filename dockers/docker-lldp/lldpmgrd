@@ -98,6 +98,8 @@ class LldpManager(object):
                                               True)
 
         self.pending_cmds = {}
+        self.port_vlan_dict = {}
+
 
     def is_port_up(self, port_name):
         """
@@ -163,32 +165,92 @@ class LldpManager(object):
 
         # Add the command to our dictionary of pending commands, overwriting any
         # previous pending command for this port
-        self.pending_cmds[port_name] = lldpcli_cmd
+        self.pending_cmds.setdefault(port_name,[]).append(lldpcli_cmd)
 
     def process_pending_cmds(self):
         # List of port names (keys of elements) to delete from self.pending_cmds
         to_delete = []
 
-        for (port_name, cmd) in self.pending_cmds.iteritems():
-            log_debug("Running command: '{}'".format(cmd))
+        for (port_name, cmd_lst) in self.pending_cmds.iteritems():
+            for cmd in cmd_lst:
+                log_info("Running command: '{}'".format(cmd))
 
-            proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-            (stdout, stderr) = proc.communicate()
+                (stdout, stderr) = proc.communicate()
 
-            # If the command succeeds, add the port name to our to_delete list.
-            # We will delete this command from self.pending_cmds below.
-            # If the command fails, log a message, but don't delete the command
-            # from self.pending_cmds, so that the command will be retried the
-            # next time this method is called.
-            if proc.returncode == 0:
-                to_delete.append(port_name)
-            else:
-                log_warning("Command failed '{}': {}".format(cmd, stderr))
+                # If the command succeeds, add the port name to our to_delete list.
+                # We will delete this command from self.pending_cmds below.
+                # If the command fails, log a message, but don't delete the command
+                # from self.pending_cmds, so that the command will be retried the
+                # next time this method is called.
+                if proc.returncode == 0:
+                    self.pending_cmds.setdefault(port_name,[]).remove(cmd)
+                    if len(self.pending_cmds[port_name]) == 0:
+                        to_delete.append(port_name)
+                else:
+                    log_warning("Command failed '{}': {}".format(cmd, stderr))
 
         # Delete all successful commands from self.pending_cmds
         for port_name in to_delete:
             self.pending_cmds.pop(port_name, None)
+
+
+
+    def update_dot1q_cap_enable(self, port_key, value):
+        if port_key not in self.port_vlan_dict.keys():
+            self.port_vlan_dict[port_key] = {"pvid":0, "name_tlv_en":0, "pvid_tlv_en":0}
+        for val in value:
+            if val[0] == "name" or val[0] == "all":
+                    self.port_vlan_dict[port_key]["name_tlv_en"] = val[1]
+            if val[0] == "pvid" or val[0] == "all":
+                    self.port_vlan_dict[port_key]["pvid_tlv_en"] = val[1]
+        self.generate_pending_lldp_config_dot1q_tlv(port_key)
+
+    def update_dot1q_cap_vlan(self, vlan_id, port_key, add):
+        """
+        creates config for vlan tlv on each port
+        """
+        log_error("vlan_id {}, port_key{}, add {}".format(vlan_id, port_key, add))
+        if port_key not in self.port_vlan_dict.keys():
+                self.port_vlan_dict[port_key] = {"pvid":0, "name_tlv_en":0, "pvid_tlv_en":0}
+        if add:
+            #update with the new pvid
+            self.port_vlan_dict[port_key]["pvid"] = vlan_id
+        else:
+            if self.port_vlan_dict[port_key]["pvid"] == vlan_id :
+            #removing the untag vlan membership
+                self.port_vlan_dict[port_key]["pvid"] = 0
+            else:
+            #its a tagged vlan
+                return
+
+        self.generate_pending_lldp_config_dot1q_tlv(port_key)
+
+    def generate_pending_lldp_config_dot1q_tlv(self, port_key)  :
+        lldpcli_cmd = ""
+        log_error("generate_pending_lldp_config_dot1q_tlv {}".format(self.port_vlan_dict[port_key]))
+        vlan_id = self.port_vlan_dict[port_key]["pvid"]
+        if  vlan_id != 0:
+            if self.port_vlan_dict[port_key]["name_tlv_en"] == '1' :
+                name = "test"
+                lldpcli_cmd = " lldpcli configure ports {} lldp custom-tlv replace oui 00,80,c2".format(port_key)
+                lldpcli_cmd += " subtype 3 oui-info {}".format(name)
+            else:
+                lldpcli_cmd = " lldpcli unconfigure ports {} lldp custom-tlv oui 00,80,c2 subtype 3".format(port_key)
+
+            self.pending_cmds.setdefault(port_key,[]).append(lldpcli_cmd)
+            if self.port_vlan_dict[port_key]["pvid_tlv_en"] == '1' :
+                lldpcli_cmd = " lldpcli configure ports {} lldp custom-tlv replace oui 00,80,c2".format(port_key)
+                lldpcli_cmd += " subtype 1 oui-info {}".format(port_key, vlan_id)
+            else:
+                lldpcli_cmd = " lldpcli unconfigure ports {} lldp custom-tlv oui 00,80,c2 subtype 1".format(port_key)
+            self.pending_cmds.setdefault(port_key,[]).append(lldpcli_cmd)
+        else:
+            lldpcli_cmd = " lldpcli unconfigure ports {} lldp custom-tlv oui 00,80,c2 subtype 3".format(port_key)
+            self.pending_cmds.setdefault(port_key,[]).append(lldpcli_cmd)
+            lldpcli_cmd = " lldpcli unconfigure ports {} lldp custom-tlv oui 00,80,c2 subtype 1".format(port_key)
+            self.pending_cmds.setdefault(port_key,[]).append(lldpcli_cmd)
 
     def run(self):
         """
@@ -210,6 +272,14 @@ class LldpManager(object):
         # Subscribe to PORT table notifications in the App DB
         sst_appdb = swsscommon.SubscriberStateTable(self.appl_db, swsscommon.APP_PORT_TABLE_NAME)
         sel.addSelectable(sst_appdb)
+
+        # Subscribe to vlan member table notifications in the app DB
+        sst_appdb_vlan = swsscommon.SubscriberStateTable(self.appl_db, swsscommon.APP_VLAN_MEMBER_TABLE_NAME)
+        sel.addSelectable(sst_appdb_vlan)
+
+        # Subscribe to lldp dot1q tlv table notifications in the config DB
+        sst_configdb_dot1q = swsscommon.SubscriberStateTable(self.config_db, "CFG_LLDP_DOT1Q_CAPBILITY")
+        sel.addSelectable(sst_configdb_dot1q)
 
         # Listen for changes to the PORT table in the CONFIG_DB and APP_DB
         while True:
@@ -239,6 +309,20 @@ class LldpManager(object):
                             else:
                                 self.pending_cmds.pop(key, None)
 
+                (key, op, fvp) = sst_appdb_vlan.pop()
+                if key:
+                        vlan_key,port_key = key.split(':')
+                        vlan_id = int(vlan_key.split("Vlan")[1])
+                        #handling single vlan update, TODO vlan list
+                        if op == "SET" and fvp[0][1] == "untagged":
+                            #tagging_mode if untagged
+                            self.update_dot1q_cap_vlan(vlan_id, port_key, 1)
+                        if op == "DEL":
+                            self.update_dot1q_cap_vlan(vlan_id, port_key, 0)
+
+                (key, op, fvp) = sst_configdb_dot1q.pop()
+                if key:
+                        self.update_dot1q_cap_enable( key, fvp)
             # Process all pending commands
             self.process_pending_cmds()
 
