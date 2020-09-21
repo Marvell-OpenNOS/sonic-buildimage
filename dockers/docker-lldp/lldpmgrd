@@ -235,7 +235,7 @@ class LldpManager(object):
             name = "%02x,%02x"%(vlan_id/256, vlan_id%256)
             if self.port_vlan_dict[port_key]["name_tlv_en"] == '1' :
                 lldpcli_cmd = " lldpcli configure ports {} lldp custom-tlv replace oui 00,80,c2".format(port_key)
-                lldpcli_cmd += " subtype 3 oui-info '{}'".format(name)
+                lldpcli_cmd += " subtype 3 oui-info {}".format(name)
             else:
                 lldpcli_cmd = " lldpcli unconfigure ports {} lldp custom-tlv oui 00,80,c2 subtype 3".format(port_key)
 
