@@ -45,9 +45,6 @@ RUN apt-get update &&   \
 {{ install_python_wheels(docker_platform_monitor_whls.split(' ')) }}
 {% endif %}
 
-# Install kmod
-RUN apt-get install kmod
-
 # Clean up
 RUN apt-get purge -y           \
         python-pip          && \
