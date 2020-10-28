@@ -5,3 +5,4 @@ m25p80
 ubi
 ubifs
 squashfs
+i2c-dev
