@@ -3,7 +3,7 @@ import os
 import re
 import subprocess
 
-import yaml
+#import yaml
 from natsort import natsorted
 
 # TODO: Replace with swsscommon
@@ -204,6 +204,7 @@ def get_path_to_port_config_file():
 
 
 def get_sonic_version_info():
+    import yaml
     if not os.path.isfile(SONIC_VERSION_YAML_PATH):
         return None
 
