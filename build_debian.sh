@@ -31,12 +31,7 @@ set -x -e
 CONFIGURED_ARCH=$([ -f .arch ] && cat .arch || echo amd64)
 
 ## docker engine version (with platform)
-if [[ $CONFIGURED_ARCH == armhf || $CONFIGURED_ARCH == arm64 ]]; then
-    # Version name differs between ARCH, copying same version as in sonic-slave docker
-    DOCKER_VERSION=18.06.3~ce~3-0~debian
-else
-    DOCKER_VERSION=5:18.09.8~3-0~debian-$IMAGE_DISTRO
-fi
+DOCKER_VERSION=5:18.09.8~3-0~debian-$IMAGE_DISTRO
 LINUX_KERNEL_VERSION=4.19.0-9-2
 
 ## Working directory to prepare the file system
@@ -202,7 +197,11 @@ sudo LANG=C chroot $FILESYSTEM_ROOT apt-get -y install apt-transport-https \
                                                        curl \
                                                        gnupg2 \
                                                        software-properties-common
-sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT curl -o /tmp/docker.gpg -fsSL https://download.docker.com/linux/debian/gpg
+if [[ $CONFIGURED_ARCH == armhf ]]; then
+    sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT curl -k -o /tmp/docker.gpg -fsSL https://download.docker.com/linux/debian/gpg
+else
+    sudo https_proxy=$https_proxy LANG=C chroot $FILESYSTEM_ROOT curl -o /tmp/docker.gpg -fsSL https://download.docker.com/linux/debian/gpg
+fi
 sudo LANG=C chroot $FILESYSTEM_ROOT apt-key add /tmp/docker.gpg
 sudo LANG=C chroot $FILESYSTEM_ROOT rm /tmp/docker.gpg
 sudo LANG=C chroot $FILESYSTEM_ROOT add-apt-repository \
