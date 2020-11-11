@@ -36,10 +36,6 @@ COPY ["sources.list", "/etc/apt/sources.list"]
 COPY ["no_install_recommend_suggest", "/etc/apt/apt.conf.d"]
 COPY ["no-check-valid-until", "/etc/apt/apt.conf.d"]
 
-{% if CONFIGURED_ARCH == "armhf" or CONFIGURED_ARCH == "arm64" %}
-RUN apt-get clean
-RUN echo "deb http://ftp.debian.org/debian buster-backports main" | tee /etc/apt/sources.list.d/backports.list
-{% endif %}
 # Update apt cache and
 # pre-install fundamental packages
 RUN apt-get update &&        \
