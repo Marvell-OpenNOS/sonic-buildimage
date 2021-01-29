@@ -1,4 +1,4 @@
-[Unit
+[Unit]
 Description=Delta-tg4810m Platform Service
 Before=pmon.service
 After=sysinit.target
