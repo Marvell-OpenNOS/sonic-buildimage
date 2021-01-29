@@ -37,6 +37,7 @@ if [ -e /usr/share/sonic/platform/fancontrol ]; then
     rm -f /var/run/fancontrol.pid
 
     /bin/cp -f /usr/share/sonic/templates/fancontrol.conf /etc/supervisord/conf.d/
+    /bin/cp -f /usr/share/sonic/platform/fancontrol /etc/fancontrol
 fi
 
 exec /usr/bin/supervisord
