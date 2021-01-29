@@ -165,8 +165,8 @@ QSFP_TYPE = "QSFP"
 OSFP_TYPE = "OSFP"
 
 # SFP PORT numbers
-SFP_PORT_START = 49
-SFP_PORT_END = 52
+SFP_PORT_START = 0
+SFP_PORT_END = 47
 
 SYSLOG_IDENTIFIER = "xcvrd"
 logger = Logger(SYSLOG_IDENTIFIER)
@@ -911,7 +911,7 @@ class Sfp(SfpBase):
         rxlosstatus = rxlosstatus&(bit_pos)
 
         if rxlosstatus == 0:
-            #print("Port " + str(port_num)  + "present")
+            #print("Port " + str(self.port_num)  + "present")
             return True
 
         return False
@@ -951,7 +951,7 @@ class Sfp(SfpBase):
         disstatus = disstatus&(bit_pos)
 
         if disstatus == 0:
-            #print("Port " + str(port_num)  + "present")
+            #print("Port " + str(self.port_num)  + "present")
             return True
 
         return False
@@ -1343,30 +1343,31 @@ class Sfp(SfpBase):
         Returns:
             bool: True if is present, False if not
         """
-        if self.sfp_type == COPPER_TYPE:
+        prt = 0
+        if self.port_num < SFP_PORT_START or self.port_num > SFP_PORT_END:
             return False
-
-        if port_num < self._port_start or port_num > self._port_end:
-            return False
-        if port_num >=1 and port_num <=8:
-            prt = port_num -1
+        if self.port_num >=0 and self.port_num <=7:
+            prt = self.port_num
             DEVICE_REG = 0x3a
-        if port_num >=9 and port_num <=16:
-            prt = port_num % 9
+        if self.port_num >=8 and self.port_num <=15:
+            prt = self.port_num % 8
             DEVICE_REG = 0x3b
-        if port_num >=17 and port_num <=24:
-            prt = port_num % 17
+        if self.port_num >=16 and self.port_num <=23:
+            prt = self.port_num % 16
             DEVICE_REG = 0x3c
-        if port_num >=25 and port_num <=32:
-            prt = port_num % 25
+        if self.port_num >=24 and self.port_num <=31:
+            prt = self.port_num % 24
             DEVICE_REG = 0x3d
-        if port_num >=33 and port_num <=40:
-            prt = port_num % 33
+        if self.port_num >=32 and self.port_num <=39:
+            prt = self.port_num % 32
             DEVICE_REG = 0x3e
-        if port_num >=41 and port_num <=48:
-            prt = port_num % 41
+        if self.port_num >=40 and self.port_num <=47:
+            prt = self.port_num % 40
             DEVICE_REG = 0x3f
 
+
+        logger.log_info("Port {} prt {}".format(self.port_num, prt) )
+        logger.log_info("eeprom {}".format(self.port_to_eeprom_mapping[self.port_num]))
         pos = [1,2,4,8,16,32,64,128]
         bit_pos = pos[prt]
         if smbus_present == 0:

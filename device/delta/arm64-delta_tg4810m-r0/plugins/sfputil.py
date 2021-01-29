@@ -61,7 +61,7 @@ class SfpUtil(SfpUtilBase):
             bus.write_byte_data(DEVICE_ADDRESS, DEVICEREG, OPTIC_E)
 
         # Mux Ordering
-        mux_dev = sorted(glob.glob("/sys/class/i2c-adapter/i2c-1/i2c-*[0-9]"))
+        mux_dev = sorted(glob.glob("/sys/class/i2c-adapter/i2c-1/i2c-*[0-9]*"))
         # Enable optoe2 Driver
         eeprom_path = "/sys/class/i2c-adapter/i2c-{0}/{0}-0050/eeprom"
         bus_path = "/sys/class/i2c-adapter/i2c-{0}/"

@@ -27,9 +27,9 @@ except ImportError as e:
 MAX_SELECT_DELAY = 3600
 COPPER_PORT_START = 0
 COPPER_PORT_END = 0
-SFP_PORT_START = 1
-SFP_PORT_END = 48
-PORT_END = 48
+SFP_PORT_START = 0
+SFP_PORT_END = 47
+PORT_END = 47
 
 # Device counts
 MAX_FAN_DRAWER = 1
@@ -67,31 +67,26 @@ class Chassis(ChassisBase):
         self.SFP_PORT_END = SFP_PORT_END
         self.PORT_END = PORT_END
 
-
         # Until Chassis API is updated for non-sfp ports create dummy objects for copper / non-sfp ports
         #for index in range(self.COPPER_PORT_START, self.COPPER_PORT_END+1):
-        #    sfp_node = Sfp(index, 'COPPER', 'N/A' , 'N/A')
-        #    self._sfp_list.append(sfp_node)
+         #   sfp_node = Sfp(index, 'COPPER', 'N/A' , 'N/A')
+         #   self._sfp_list.append(sfp_node)
 
         # Mux Ordering
-        mux_dev = sorted(glob.glob("/sys/class/i2c-adapter/i2c-1/i2c-*[0-9]"))
+        mux_dev = sorted(glob.glob("/sys/class/i2c-adapter/i2c-1/i2c-*[0-9]*"))
         # Enable optoe2 Driver
-        eeprom_path = "/sys/class/i2c-adapter/i2c-{0}/{0}-0050/eeprom"
+        eeprom_path = "/sys/class/i2c-adapter/i2c-1/i2c-{0}/{0}-0050/eeprom"
 
 	y = 0
         for index in range(self.SFP_PORT_START, self.SFP_PORT_END+1):
-            mux_dev_num = mux_dev[y]
+            #mux_dev_num = mux_dev[y]
             #port_i2c_map = mux_dev_num.split('-')[-1]
-            self.port_to_i2c_mapping[x] = mux_dev_num.split('-')[-1]
-            physical_port = int(self.port_to_i2c_mapping[x]) - 2
-            y = y + 1
-            #port_eeprom_path = eeprom_path.format(port_i2c_map)
-            port_eeprom_path = eeprom_path.format(self.port_to_i2c_mapping[x])
+            i2cdev = index + 3
+            #y = y + 1
+            port_eeprom_path = eeprom_path.format(i2cdev)
             if not os.path.exists(port_eeprom_path):
 	    	logger.log_info(" DEBUG - path %s -- did not exist " % port_eeprom_path )
-                bus_dev_path = bus_path.format(self.port_to_i2c_mapping[x])
-                os.system("echo optoe2 0x50 > " + bus_dev_path + "/new_device")
-            sfp_node = Sfp(physical_port, 'SFP', port_eeprom_path, port_i2c_map )
+            sfp_node = Sfp(index, 'SFP', port_eeprom_path, i2cdev )
             self._sfp_list.append(sfp_node)
 
         self.sfp_event_initialized = False
