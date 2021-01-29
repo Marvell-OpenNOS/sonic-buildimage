@@ -31,7 +31,7 @@ class SfpUtil(SfpUtilBase):
     port_to_i2c_mapping = {
     }
     _qsfp_ports = range(_port_start, ports_in_block + 1)
-    _changed_ports = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    _changed_ports = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     
     def __init__(self):
 
@@ -69,18 +69,18 @@ class SfpUtil(SfpUtilBase):
         for x in range(self.port_start, self.port_end + 1):
             mux_dev_num = mux_dev[y]
             self.port_to_i2c_mapping[x] = mux_dev_num.split('-')[-1]
-            print x
-            print self.port_to_i2c_mapping[x]
+            #print x
+            #print self.port_to_i2c_mapping[x]
             physical_port = int(self.port_to_i2c_mapping[x]) - 2 
             y = y + 1
             port_eeprom_path = eeprom_path.format(self.port_to_i2c_mapping[x])
             if not os.path.exists(port_eeprom_path):
                 bus_dev_path = bus_path.format(self.port_to_i2c_mapping[x])
-                print(bus_dev_path)
+                #print(bus_dev_path)
                 os.system("echo optoe2 0x50 > " + bus_dev_path + "/new_device")
             self.port_to_eeprom_mapping[physical_port] = port_eeprom_path
             self._port_to_eeprom_mapping[physical_port] = port_eeprom_path
-            print self._port_to_eeprom_mapping[physical_port]
+            #print self._port_to_eeprom_mapping[physical_port]
         SfpUtilBase.__init__(self)
 
     def reset(self, port_num):
@@ -143,12 +143,12 @@ class SfpUtil(SfpUtilBase):
              DEVICE_ADDRESS = 0x41
              sfpstatus = bus.read_byte_data(DEVICE_ADDRESS, DEVICE_REG)
         sfpstatus = sfpstatus&(bit_pos)
-        print "checking presence"
-        print bit_pos
-        print sfpstatus
-        print port_num
+        #print "checking presence"
+        #print bit_pos
+        #print sfpstatus
+        #print port_num
         if sfpstatus == 0:
-            print "sfp found"
+            #print "sfp found"
             return True
         return False
         
@@ -266,29 +266,17 @@ class SfpUtil(SfpUtilBase):
         #poll per second
         while cd_ms > 0:
            for port_num in range(1,48):
-              if port_num >=1 or port_num <=8:
-                 prt = port_num - 1
-              if port_num >=9 or port_num <=16:
-                 prt = port_num % 9
-              if port_num >=17 or port_num <=24:
-                 prt = port_num % 17
-              if port_num >=25 or port_num <=32:
-                 prt = port_num % 25
-              if port_num >=33 or port_num <=40:
-                 prt = port_num % 33
-              if port_num >=41 or port_num <=48:
-                 prt = port_num % 41
               sfpstatus = self.get_presence(port_num)
               if sfpstatus==0 :
                  port_dict[str(port_num)]= '1'
-                 if self._changed_ports[prt] == 0:
+                 if self._changed_ports[port_num] == 0:
                      changed_port = 1
-                     self._changed_ports[prt] = 1
+                     self._changed_ports[port_num] = 1
               else :
                  port_dict[str(port_num)] = '0'
-                 if self._changed_ports[prt] == 1:
+                 if self._changed_ports[port_num] == 1:
                      changed_port = 1
-                     self._changed_ports[prt] = 0
+                     self._changed_ports[port_num] = 0
            if changed_port != 0:
                break
            time.sleep(1)
