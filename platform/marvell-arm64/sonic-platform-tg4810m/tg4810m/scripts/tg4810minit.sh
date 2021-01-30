@@ -20,7 +20,7 @@ load_kernel_drivers() {
 # - Main entry
 
 # Install kernel drivers required for i2c bus access
-load_kernel_drivers
+#load_kernel_drivers
 
 # LOGIC to enumerate SFP eeprom devices - send 0x50 to kernel i2c driver - initialize devices
 # the mux may be enumerated at number 4 or 5 so we check for the mux and skip if needed

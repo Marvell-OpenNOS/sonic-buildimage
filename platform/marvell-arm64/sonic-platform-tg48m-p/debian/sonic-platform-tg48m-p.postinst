@@ -4,6 +4,7 @@
 # see: dh_installdeb(1)
 
 sh /usr/sbin/tg48m-p_plt_setup.sh
+chmod a+x /usr/local/bin/tg48m-pinit.sh
 systemctl enable tg48m-pinit.service
 systemctl start tg48m-pinit.service
 
