@@ -30,7 +30,8 @@ class SfpUtil(SfpUtilBase):
     _port_to_eeprom_mapping = {}
     port_to_i2c_mapping = {
     }
-    _qsfp_ports = range(_port_start, ports_in_block + 1)
+    #_qsfp_ports = range(_port_start, ports_in_block + 1)
+    _qsfp_ports = {}
     _changed_ports = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     
     def __init__(self):
