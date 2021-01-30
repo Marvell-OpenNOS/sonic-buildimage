@@ -1,0 +1,5 @@
+tg48m-p_plt_setup.sh usr/sbin
+tg48m-p/scripts/tg48m-pinit.sh  usr/local/bin
+tg48m-p/service/tg48m-pinit.service  etc/systemd/system
+tg48m-p/sonic_platform-1.0-py2-none-any.whl usr/share/sonic/device/arm64-delta_tg48m_poe-r0
+tg48m-p/sonic_platform-1.0-py3-none-any.whl usr/share/sonic/device/arm64-delta_tg48m_poe-r0
