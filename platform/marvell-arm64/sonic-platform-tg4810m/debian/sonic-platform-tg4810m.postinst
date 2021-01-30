@@ -1,0 +1,10 @@
+#!/bin/sh
+# postinst script for sonic-platform-tg4810m
+#
+# see: dh_installdeb(1)
+
+sh /usr/sbin/tg4810m_plt_setup.sh
+systemctl enable tg4810minit.service
+systemctl start tg4810minit.service
+exit 0
+
