@@ -893,21 +893,43 @@ class Sfp(SfpBase):
         Returns:
             A Boolean, True if SFP has RX LOS, False if not.
         """
-        if self.sfp_type == COPPER_TYPE:
-            return False
 
+        prt = 0
+        if self.port_num < SFP_PORT_START or self.port_num > SFP_PORT_END:
+            return False
+        if self.port_num >=0 and self.port_num <=7:
+            prt = self.port_num
+            DEVICE_REG = 0x40
+        if self.port_num >=8 and self.port_num <=15:
+            prt = self.port_num % 8
+            DEVICE_REG = 0x41
+        if self.port_num >=16 and self.port_num <=23:
+            prt = self.port_num % 16
+            DEVICE_REG = 0x42
+        if self.port_num >=24 and self.port_num <=31:
+            prt = self.port_num % 24
+            DEVICE_REG = 0x43
+        if self.port_num >=32 and self.port_num <=39:
+            prt = self.port_num % 32
+            DEVICE_REG = 0x44
+        if self.port_num >=40 and self.port_num <=47:
+            prt = self.port_num % 40
+            DEVICE_REG = 0x45
+
+
+        logger.log_info("Port {} prt {}".format(self.port_num, prt) )
+        logger.log_info("eeprom {}".format(self.port_to_eeprom_mapping[self.port_num]))
+        pos = [1,2,4,8,16,32,64,128]
+        bit_pos = pos[prt]
         if smbus_present == 0:
             logger.log_info("  PMON - smbus ERROR -    ")
-            cmdstatus, rxlosstatus = cmd.getstatusoutput('i2cget -y 2 0x41 0x40') #need to verify the cpld register logic
+            cmdstatus, rxlosstatus = cmd.getstatusoutput("i2cget -y 2 0x41 "+ hex(DEVICE_REG) + " " )
             rxlosstatus = int(rxlosstatus, 16)
         else:
             bus = smbus.SMBus(2)
             DEVICE_ADDRESS = 0x41
-            DEVICE_REG = 0x40
             rxlosstatus = bus.read_byte_data(DEVICE_ADDRESS, DEVICE_REG)
 
-        pos = [1,2,4,8]
-        bit_pos = pos[self.index-SFP_PORT_START]
         rxlosstatus = rxlosstatus&(bit_pos)
 
         if rxlosstatus == 0:

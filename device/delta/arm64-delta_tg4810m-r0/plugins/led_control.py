@@ -51,13 +51,11 @@ class LedControl(LedControlBase):
             # Front Panel FAN LED
             if ( self.chassis.get_fan(0).get_status() == self.chassis.get_fan(1).get_status() == self.chassis.get_fan(2).get_status() == True ):
                 if ( fan_led != 0x1 ):
-		    if (os.path.isfile("/sys/class/gpio/fanLedGreen/brightness")):
                     	self.gpio_led_write("/sys/class/leds/fanLedGreen",1)
                     	self.gpio_led_write("/sys/class/leds/fanLedAmber",0)
                     	fan_led = 0x1
             else :
                 if ( fan_led != 0x0 ):
-		    if (os.path.isfile("/sys/class/gpio/fanLedAmber/brightness")):
                     	self.gpio_led_write("/sys/class/leds/fanLedAmber",1)
                     	self.gpio_led_write("/sys/class/leds/fanLedGreen",0)
                     	fan_led = 0x0
@@ -65,13 +63,11 @@ class LedControl(LedControlBase):
 	    # Front Panel PSU LED
             if ( self.chassis.get_psu(0).get_status() == self.chassis.get_psu(1).get_status() == True ):
                 if ( psu_led != 0x1 ):
-		    if (os.path.isfile("/sys/class/gpio/psuLedGreen/brightness")):
                     	self.gpio_led_write("/sys/class/leds/psuLedGreen",1)
                     	self.gpio_led_write("/sys/class/leds/psuLedAmber",0)
                     	psu_led = 0x1
             else :
                 if ( psu_led != 0x0 ):
-		    if (os.path.isfile("/sys/class/gpio/psuLedAmber/brightness")):
                     	self.gpio_led_write("/sys/class/leds/psuLedAmber",1)
                     	self.gpio_led_write("/sys/class/leds/psuLedGreen",0)
                     	psu_led = 0x0
@@ -79,13 +75,11 @@ class LedControl(LedControlBase):
 	    # Front Panel system LED
             if ( fan_led == psu_led == 0x1 ) :
                 if ( sys_led != 0x1 ):
-		    if (os.path.isfile("/sys/class/gpio/sysLedGreen/brightness")):
                     	self.gpio_led_write("/sys/class/leds/sysLedGreen",1)
                     	self.gpio_led_write("/sys/class/leds/sysLedAmber",0)
                     	sys_led = 0x1
             else:
                 if ( sys_led != 0x0 ):
-		    if (os.path.isfile("/sys/class/gpio/sysLedAmber/brightness")):
                     	self.gpio_led_write("/sys/class/leds/sysLedAmber",1)
                     	self.gpio_led_write("/sys/class/leds/sysLedGreen",0)
                     	sys_led = 0x0
