@@ -64,12 +64,13 @@ class Psu(PsuBase):
              
         if self.index == 1:
              psustatus = psustatus&1
-             if psustatus == 0 :
-                 return True
+             if psustatus == 1 :
+                 return False
         if self.index == 2:
             psustatus = psustatus&2
-            if psustatus == 0 :
-                return True
+            if psustatus == 2 :
+                return False
+  
         return True
 
     def get_model(self):
