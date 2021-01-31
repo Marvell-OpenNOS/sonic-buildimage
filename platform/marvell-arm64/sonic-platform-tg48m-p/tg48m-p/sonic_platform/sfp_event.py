@@ -56,10 +56,10 @@ class sfp_event:
         
         if smbus_present == 0:
             logger.log_info("  PMON - smbus ERROR - DEBUG sfp_event   ")
-            cmdstatus, sfpstatus = cmd.getstatusoutput('i2cget -y 0 0x41 0x3') #need to verify the cpld register logic
+            cmdstatus, sfpstatus = cmd.getstatusoutput('i2cget -y 2 0x41 0x3') #need to verify the cpld register logic
             sfpstatus = int(sfpstatus, 16)
         else:
-            bus = smbus.SMBus(0)
+            bus = smbus.SMBus(2)
             DEVICE_ADDRESS = 0x41
             DEVICE_REG = 0x3
             sfpstatus = bus.read_byte_data(DEVICE_ADDRESS, DEVICE_REG)  
