@@ -535,7 +535,12 @@ if [[ $CONFIGURED_ARCH == armhf || $CONFIGURED_ARCH == arm64 ]]; then
         sudo LANG=C chroot $FILESYSTEM_ROOT mv /boot/u${INITRD_FILE} /boot/$INITRD_FILE
     elif [[ $CONFIGURED_ARCH == arm64 ]]; then
         sudo cp -v $PLATFORM_DIR/${sonic_asic_platform}-${CONFIGURED_ARCH}/sonic_fit.its $FILESYSTEM_ROOT/boot/
+        sudo cp -v $PLATFORM_DIR/${sonic_asic_platform}-${CONFIGURED_ARCH}/sonic_fit_tg48m-p.its $FILESYSTEM_ROOT/boot/
+        sudo cp -v $PLATFORM_DIR/${sonic_asic_platform}-${CONFIGURED_ARCH}/sonic_fit_tg4810m.its $FILESYSTEM_ROOT/boot/
         sudo LANG=C chroot $FILESYSTEM_ROOT mkimage -f /boot/sonic_fit.its /boot/sonic_${CONFIGURED_ARCH}.fit
+        sudo LANG=C chroot $FILESYSTEM_ROOT mkimage -f /boot/sonic_fit_tg48m-p.its /boot/sonic_tg48m-p_${CONFIGURED_ARCH}.fit
+        sudo LANG=C chroot $FILESYSTEM_ROOT mkimage -f /boot/sonic_fit_tg4810m.its /boot/sonic_tg4810m_${CONFIGURED_ARCH}.fit
+
     fi
 fi
 

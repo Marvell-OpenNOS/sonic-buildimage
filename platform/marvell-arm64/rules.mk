@@ -1,4 +1,6 @@
 #include $(PLATFORM_PATH)/sdk.mk
+include $(PLATFORM_PATH)/platform-tg48m-p.mk
+include $(PLATFORM_PATH)/platform-tg4810m.mk
 include $(PLATFORM_PATH)/sai.mk
 include $(PLATFORM_PATH)/docker-syncd-mrvl.mk
 include $(PLATFORM_PATH)/docker-syncd-mrvl-rpc.mk
