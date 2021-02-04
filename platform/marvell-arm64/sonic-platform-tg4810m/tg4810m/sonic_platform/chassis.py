@@ -10,7 +10,6 @@
 try:
     import os
     import sys
-    import glob
     from sonic_platform_base.chassis_base import ChassisBase
     from sonic_platform.sfp import Sfp
     from sonic_platform.eeprom import Eeprom
