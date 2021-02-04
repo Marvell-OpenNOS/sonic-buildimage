@@ -80,7 +80,7 @@ class Eeprom(TlvInfoDecoder):
         try:
             # Read System EEPROM as per ONIE TlvInfo EEPROM format.
             self.eeprom_data = self.read_eeprom()
-        except:
+        except Exception as e:
             self.base_mac = 'NA'
             self.serial_number = 'NA'
             self.part_number = 'NA'
@@ -143,7 +143,7 @@ class Eeprom(TlvInfoDecoder):
         try:
             # Read Fan/PSU EEPROM as per the specified format.
             self.eeprom_data = EepromDecoder.read_eeprom(self)
-        except:
+        except Exception as e:
             self.serial_number = 'NA'
             self.part_number = 'NA'
             self.model_str = 'NA'
