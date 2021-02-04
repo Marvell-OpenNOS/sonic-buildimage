@@ -4,13 +4,10 @@
 import os
 import sys
 import time
-import subprocess
-import sonic_device_util
 from ctypes import create_string_buffer
 
 try:
     from sonic_platform_base.sfp_base import SfpBase
-    from sonic_platform_base.sonic_eeprom import eeprom_dts
     from sonic_platform_base.sonic_sfp.sff8472 import sff8472InterfaceId
     from sonic_platform_base.sonic_sfp.sff8472 import sff8472Dom
     from sonic_platform_base.sonic_sfp.sff8436 import sff8436InterfaceId
@@ -270,7 +267,7 @@ class Sfp(SfpBase):
             raw = sysfsfile_eeprom.read(num_bytes)
             for n in range(0, num_bytes):
                 eeprom_raw[n] = hex(ord(raw[n]))[2:].zfill(2)
-        except:
+        except Exception as e:
             pass
         finally:
             if sysfsfile_eeprom:
@@ -475,9 +472,7 @@ class Sfp(SfpBase):
             if self.sfp_type == QSFP_TYPE:
                 offset = 128
                 vendor_rev_width = XCVR_HW_REV_WIDTH_QSFP
-                cable_length_width = XCVR_CABLE_LENGTH_WIDTH_QSFP
                 interface_info_bulk_width = XCVR_INTFACE_BULK_WIDTH_QSFP
-                sfp_type = 'QSFP'
 
                 sfpi_obj = sff8436InterfaceId()
                 if sfpi_obj is None:
@@ -487,9 +482,7 @@ class Sfp(SfpBase):
             else:
                 offset = 0
                 vendor_rev_width = XCVR_HW_REV_WIDTH_SFP
-                cable_length_width = XCVR_CABLE_LENGTH_WIDTH_SFP
                 interface_info_bulk_width = XCVR_INTFACE_BULK_WIDTH_SFP
-                sfp_type = 'SFP'
 
                 sfpi_obj = sff8472InterfaceId()
                 if sfpi_obj is None:
@@ -868,7 +861,6 @@ class Sfp(SfpBase):
             return False
         elif self.sfp_type == QSFP_TYPE:
             offset = 0
-            sfpd_obj = sff8436Dom()
             dom_module_monitor_raw = self.__read_eeprom_specific_bytes(
                 (offset + QSFP_MODULE_MONITOR_OFFSET), QSFP_MODULE_MONITOR_WIDTH)
 
@@ -878,7 +870,6 @@ class Sfp(SfpBase):
                 return False
         elif self.sfp_type == SFP_TYPE:
             offset = 0
-            sfpd_obj = sff8472Dom()
             dom_channel_monitor_raw = self.__read_eeprom_specific_bytes(
                 (offset + SFP_CHANNL_STATUS_OFFSET), SFP_CHANNL_STATUS_WIDTH)
 
@@ -965,7 +956,7 @@ class Sfp(SfpBase):
         else :
             bus = smbus.SMBus(2)
             DEVICE_ADDRESS = 0x41
-            DEVICEREG = 0x31
+            DEVICE_REG = 0x31
             disstatus = bus.read_byte_data(DEVICE_ADDRESS, DEVICE_REG)
 
         pos = [1,2,4,8]
@@ -1083,7 +1074,6 @@ class Sfp(SfpBase):
 
         elif self.sfp_type == QSFP_TYPE:
             offset = 0
-            offset_xcvr = 128
 
             sfpd_obj = sff8436Dom()
             if sfpd_obj is None:
@@ -1150,7 +1140,6 @@ class Sfp(SfpBase):
 
         elif self.sfp_type == QSFP_TYPE:
             offset = 0
-            offset_xcvr = 128
 
             sfpd_obj = sff8436Dom()
             if sfpd_obj is None:

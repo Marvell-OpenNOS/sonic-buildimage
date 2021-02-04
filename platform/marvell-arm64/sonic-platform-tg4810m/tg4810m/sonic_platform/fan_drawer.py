@@ -7,7 +7,6 @@
 #
 #############################################################################
 
-import os
 
 try:
     from sonic_platform_base.fan_drawer_base import FanDrawerBase

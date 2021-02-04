@@ -15,7 +15,7 @@ try:
     from sonic_platform.sfp import Sfp
     from sonic_platform.eeprom import Eeprom
     from sonic_platform.fan import Fan
-    from .fan_drawer import RealDrawer, VirtualDrawer
+    from .fan_drawer import VirtualDrawer
     from sonic_platform.psu import Psu
     from sonic_platform.thermal import Thermal
     from sonic_platform.component import Component
@@ -98,7 +98,6 @@ class Chassis(ChassisBase):
         # and other chassis components
         drawer_num = MAX_FAN_DRAWER
         fan_num_per_drawer = MAX_FAN
-        drawer_type = "virtual"
         drawer_ctor = VirtualDrawer
 
         fan_index = 0

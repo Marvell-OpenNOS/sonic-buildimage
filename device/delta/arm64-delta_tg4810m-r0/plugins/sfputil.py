@@ -257,7 +257,6 @@ class SfpUtil(SfpUtilBase):
 
     def get_transceiver_change_event(self, timeout):
         port_dict = {}
-        port = 0
 
         if timeout == 0:
             cd_ms = sys.maxint
