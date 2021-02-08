@@ -165,8 +165,8 @@ QSFP_TYPE = "QSFP"
 OSFP_TYPE = "OSFP"
 
 # SFP PORT numbers
-SFP_PORT_START = 0
-SFP_PORT_END = 47
+SFP_PORT_START = 1
+SFP_PORT_END = 48
 
 SYSLOG_IDENTIFIER = "xcvrd"
 logger = Logger(SYSLOG_IDENTIFIER)
@@ -1368,28 +1368,28 @@ class Sfp(SfpBase):
         prt = 0
         if self.port_num < SFP_PORT_START or self.port_num > SFP_PORT_END:
             return False
-        if self.port_num >=0 and self.port_num <=7:
-            prt = self.port_num
+        if self.port_num >=1 and self.port_num <=8:
+            prt = self.port_num - 1
             DEVICE_REG = 0x3a
-        if self.port_num >=8 and self.port_num <=15:
-            prt = self.port_num % 8
+        if self.port_num >=9 and self.port_num <=16:
+            prt = self.port_num % 9
             DEVICE_REG = 0x3b
-        if self.port_num >=16 and self.port_num <=23:
-            prt = self.port_num % 16
+        if self.port_num >=17 and self.port_num <=24:
+            prt = self.port_num % 17
             DEVICE_REG = 0x3c
-        if self.port_num >=24 and self.port_num <=31:
-            prt = self.port_num % 24
+        if self.port_num >=25 and self.port_num <=32:
+            prt = self.port_num % 25
             DEVICE_REG = 0x3d
-        if self.port_num >=32 and self.port_num <=39:
-            prt = self.port_num % 32
+        if self.port_num >=33 and self.port_num <=40:
+            prt = self.port_num % 33
             DEVICE_REG = 0x3e
-        if self.port_num >=40 and self.port_num <=47:
-            prt = self.port_num % 40
+        if self.port_num >=41 and self.port_num <=48:
+            prt = self.port_num % 41
             DEVICE_REG = 0x3f
 
 
-        logger.log_info("Port {} prt {}".format(self.port_num, prt) )
-        logger.log_info("eeprom {}".format(self.port_to_eeprom_mapping[self.port_num]))
+        #logger.log_info("Port {} prt {}".format(self.port_num, prt) )
+        #logger.log_info("eeprom {}".format(self.port_to_eeprom_mapping[self.port_num]))
         pos = [1,2,4,8,16,32,64,128]
         bit_pos = pos[prt]
         if smbus_present == 0:
