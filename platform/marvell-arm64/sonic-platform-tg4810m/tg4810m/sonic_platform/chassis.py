@@ -27,9 +27,9 @@ except ImportError as e:
 MAX_SELECT_DELAY = 3600
 COPPER_PORT_START = 0
 COPPER_PORT_END = 0
-SFP_PORT_START = 0
-SFP_PORT_END = 47
-PORT_END = 47
+SFP_PORT_START = 1
+SFP_PORT_END = 48
+PORT_END = 48
 
 # Device counts
 MAX_FAN_DRAWER = 1
@@ -81,7 +81,7 @@ class Chassis(ChassisBase):
         for index in range(self.SFP_PORT_START, self.SFP_PORT_END+1):
             #mux_dev_num = mux_dev[y]
             #port_i2c_map = mux_dev_num.split('-')[-1]
-            i2cdev = index + 3
+            i2cdev = index + 2
             #y = y + 1
             port_eeprom_path = eeprom_path.format(i2cdev)
             if not os.path.exists(port_eeprom_path):
