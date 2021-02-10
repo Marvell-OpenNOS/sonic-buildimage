@@ -70,8 +70,6 @@ class SfpUtil(SfpUtilBase):
         for x in range(self.port_start, self.port_end + 1):
             mux_dev_num = mux_dev[y]
             self.port_to_i2c_mapping[x] = mux_dev_num.split('-')[-1]
-            #print x
-            #print self.port_to_i2c_mapping[x]
             physical_port = int(self.port_to_i2c_mapping[x]) - 2 
             y = y + 1
             port_eeprom_path = eeprom_path.format(self.port_to_i2c_mapping[x])
