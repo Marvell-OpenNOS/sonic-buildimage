@@ -22,8 +22,8 @@ SYSTEM_READY = 'system_become_ready'
 SYSTEM_FAIL = 'system_fail'
 
 # SFP PORT numbers
-SFP_PORT_START = 0
-SFP_PORT_END = 47
+SFP_PORT_START = 1
+SFP_PORT_END = 48
 
 
 
@@ -59,28 +59,29 @@ class sfp_event:
             logger.log_info("  PMON - smbus ERROR - DEBUG sfp_event   ")
             cmdstatus, sfpstatus = cmd.getstatusoutput('i2cget -y 2 0x41 0x3a') 
             sfpstatus = int(sfpstatus, 16)
-            sfpstatus_bin = sfpstatus_bin + (format(sfpstatus, '#010b')).split('0b')[1]
+            sfpstatus_bin = (format(sfpstatus, '#010b')).split('0b')[1] + sfpstatus_bin
 
             cmdstatus, sfpstatus = cmd.getstatusoutput('i2cget -y 2 0x41 0x3b')
             sfpstatus = int(sfpstatus, 16)
-            sfpstatus_bin = sfpstatus_bin + (format(sfpstatus, '#010b')).split('0b')[1]
+            sfpstatus_bin = (format(sfpstatus, '#010b')).split('0b')[1] + sfpstatus_bin
 
             cmdstatus, sfpstatus = cmd.getstatusoutput('i2cget -y 2 0x41 0x3c') 
             sfpstatus = int(sfpstatus, 16)
-            sfpstatus_bin = sfpstatus_bin + (format(sfpstatus, '#010b')).split('0b')[1]
+            sfpstatus_bin = (format(sfpstatus, '#010b')).split('0b')[1] + sfpstatus_bin
 
             cmdstatus, sfpstatus = cmd.getstatusoutput('i2cget -y 2 0x41 0x3d')
             sfpstatus = int(sfpstatus, 16)
-            sfpstatus_bin = sfpstatus_bin + (format(sfpstatus, '#010b')).split('0b')[1]
+            sfpstatus_bin = (format(sfpstatus, '#010b')).split('0b')[1] + sfpstatus_bin
 
             cmdstatus, sfpstatus = cmd.getstatusoutput('i2cget -y 2 0x41 0x3e')
             sfpstatus = int(sfpstatus, 16)
-            sfpstatus_bin = sfpstatus_bin + (format(sfpstatus, '#010b')).split('0b')[1]
+            sfpstatus_bin = (format(sfpstatus, '#010b')).split('0b')[1] + sfpstatus_bin
 
             cmdstatus, sfpstatus = cmd.getstatusoutput('i2cget -y 2 0x41 0x3f')
             sfpstatus = int(sfpstatus, 16)
-            sfpstatus_bin = sfpstatus_bin + (format(sfpstatus, '#010b')).split('0b')[1]
+            sfpstatus_bin = (format(sfpstatus, '#010b')).split('0b')[1] + sfpstatus_bin
 
+            sfpstatus_bin = ''.join('1' if j == '0' else '0' for j in sfpstatus_bin)
             sfpstatus = int(sfpstatus_bin,2)
         else:
             sfpstatus_bin = ''
@@ -88,42 +89,42 @@ class sfp_event:
             DEVICE_ADDRESS = 0x41
             DEVICE_REG = 0x3a
             sfpstatus = bus.read_byte_data(DEVICE_ADDRESS, DEVICE_REG)  
-            sfpstatus_bin = sfpstatus_bin + (format(sfpstatus, '#010b')).split('0b')[1]
+            sfpstatus_bin = (format(sfpstatus, '#010b')).split('0b')[1] + sfpstatus_bin
 
             bus = smbus.SMBus(2)
             DEVICE_ADDRESS = 0x41
             DEVICE_REG = 0x3b
             sfpstatus = bus.read_byte_data(DEVICE_ADDRESS, DEVICE_REG)  
-            sfpstatus_bin = sfpstatus_bin + (format(sfpstatus, '#010b')).split('0b')[1]
+            sfpstatus_bin =  (format(sfpstatus, '#010b')).split('0b')[1] + sfpstatus_bin
 
 
             bus = smbus.SMBus(2)
             DEVICE_ADDRESS = 0x41
             DEVICE_REG = 0x3c
             sfpstatus = bus.read_byte_data(DEVICE_ADDRESS, DEVICE_REG)  
-            sfpstatus_bin = sfpstatus_bin + (format(sfpstatus, '#010b')).split('0b')[1]
+            sfpstatus_bin =  (format(sfpstatus, '#010b')).split('0b')[1] + sfpstatus_bin
 
             bus = smbus.SMBus(2)
             DEVICE_ADDRESS = 0x41
             DEVICE_REG = 0x3d
             sfpstatus = bus.read_byte_data(DEVICE_ADDRESS, DEVICE_REG)  
-            sfpstatus_bin = sfpstatus_bin + (format(sfpstatus, '#010b')).split('0b')[1]
+            sfpstatus_bin =  (format(sfpstatus, '#010b')).split('0b')[1] + sfpstatus_bin
 
             bus = smbus.SMBus(2)
             DEVICE_ADDRESS = 0x41
             DEVICE_REG = 0x3e
             sfpstatus = bus.read_byte_data(DEVICE_ADDRESS, DEVICE_REG)  
-            sfpstatus_bin = sfpstatus_bin + (format(sfpstatus, '#010b')).split('0b')[1]
+            sfpstatus_bin = (format(sfpstatus, '#010b')).split('0b')[1] + sfpstatus_bin
 
             bus = smbus.SMBus(2)
             DEVICE_ADDRESS = 0x41
             DEVICE_REG = 0x3f
             sfpstatus = bus.read_byte_data(DEVICE_ADDRESS, DEVICE_REG)  
-            sfpstatus_bin = sfpstatus_bin + (format(sfpstatus, '#010b')).split('0b')[1]
+            sfpstatus_bin = (format(sfpstatus, '#010b')).split('0b')[1] + sfpstatus_bin
 
+            #logger.log_info("Current SFP presence in bin   =   %s" % sfpstatus_bin )
+            sfpstatus_bin = ''.join('1' if j == '0' else '0' for j in sfpstatus_bin)
             sfpstatus = int(sfpstatus_bin, 2)
-            sfpstatus = ~sfpstatus
-            sfpstatus = sfpstatus & 0xF
             
         return sfpstatus
 
