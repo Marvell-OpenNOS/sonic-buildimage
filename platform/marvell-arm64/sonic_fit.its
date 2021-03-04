@@ -28,6 +28,30 @@
                 algo = "sha1";
             };
         };
+	fdt@1 {
+            description = "Flattened Device Tree blob";
+            data = /incbin/("/boot/tg4810m.dtb");
+            type = "flat_dt";
+            arch = "arm64";
+	    load = <0x10000000>;
+            compression = "none";
+            hash@1 {
+                algo = "sha1";
+            };
+        };
+	fdt@2 {
+            description = "Flattened Device Tree blob";
+            data = /incbin/("/boot/tg48m-p.dtb");
+            type = "flat_dt";
+            arch = "arm64";
+            load = <0x10000000>;
+            compression = "none";
+            hash@1 {
+                algo = "sha1";
+            };
+        };
+
+
         ramdisk@0 {
             description = "ramdisk";
             data = /incbin/("/boot/initrd.img-4.9.0-9-2-arm64");
@@ -41,11 +65,29 @@
         };
     };
     configurations {
-        default = "conf@1";
-        conf@1 {
+        default = "config_falcon";
+        config_falcon {
             description = "Boot Linux kernel with FDT blob + ramdisk";
             kernel = "kernel@0";
             fdt = "fdt@0";
+            ramdisk = "ramdisk@0";
+            hash@1 {
+                algo = "sha1";
+            };
+        };
+	delta_tg4810m {
+            description = "Boot Linux kernel with FDT blob + ramdisk";
+            kernel = "kernel@0";
+            fdt = "fdt@1";
+            ramdisk = "ramdisk@0";
+            hash@1 {
+                algo = "sha1";
+            };
+        };
+	delta_tg48m_poe {
+            description = "Boot Linux kernel with FDT blob + ramdisk";
+            kernel = "kernel@0";
+            fdt = "fdt@2";
             ramdisk = "ramdisk@0";
             hash@1 {
                 algo = "sha1";
