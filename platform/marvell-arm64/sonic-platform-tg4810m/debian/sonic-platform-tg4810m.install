@@ -1,0 +1,5 @@
+tg4810m_plt_setup.sh usr/sbin
+tg4810m/scripts/tg4810minit.sh  usr/local/bin
+tg4810m/service/tg4810minit.service  etc/systemd/system
+tg4810m/sonic_platform-1.0-py2-none-any.whl usr/share/sonic/device/arm64-delta_tg4810m-r0
+tg4810m/sonic_platform-1.0-py3-none-any.whl usr/share/sonic/device/arm64-delta_tg4810m-r0
