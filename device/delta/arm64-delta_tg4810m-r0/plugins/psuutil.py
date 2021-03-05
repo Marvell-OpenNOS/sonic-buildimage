@@ -3,7 +3,6 @@
 # Platform-specific PSU functionality for SONiC
 
 import sys
-import os.path
 
 if sys.version_info[0] < 3:
     import commands as cmd
@@ -25,7 +24,6 @@ class PsuUtil(PsuBase):
     """Platform-specific PSUutil class"""
     def __init__(self):
        PsuBase.__init__(self)
-       MAX_PSUS = 2
 
     def get_num_psus(self):
         MAX_PSUS = 2
