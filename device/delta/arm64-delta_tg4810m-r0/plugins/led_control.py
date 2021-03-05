@@ -12,11 +12,6 @@ try:
 except ImportError as e:
     raise ImportError(str(e) + " - required module not found")
 
-smbus_present = 1
-try:
-    import smbus
-except ImportError as e:
-    smbus_present = 0
 
 class LedControl(LedControlBase):
     """Platform specific LED control class"""
