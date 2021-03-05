@@ -284,5 +284,4 @@ class SfpUtil(SfpUtilBase):
             return True, port_dict
         else:
             return True, {}
-        return False, {}
 
