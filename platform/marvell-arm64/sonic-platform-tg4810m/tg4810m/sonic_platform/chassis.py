@@ -10,7 +10,6 @@
 try:
     import os
     import sys
-    import glob
     from sonic_platform_base.chassis_base import ChassisBase
     from sonic_platform.sfp import Sfp
     from sonic_platform.eeprom import Eeprom
@@ -98,7 +97,6 @@ class Chassis(ChassisBase):
         # and other chassis components
         drawer_num = MAX_FAN_DRAWER
         fan_num_per_drawer = MAX_FAN
-        drawer_type = "virtual"
         drawer_ctor = VirtualDrawer
 
         fan_index = 0
