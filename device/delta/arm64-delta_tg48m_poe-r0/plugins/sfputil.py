@@ -106,19 +106,16 @@ class SfpUtil(SfpUtilBase):
         if port_num < self._port_start or port_num > self._port_end:
             return False
         prt = port_num % 49
-        sel = "{0:02b}".format(prt)
-        p = sel[0]
-        q = sel[1]
 
         pos = [1,2,4,8]
         bit_pos = pos[prt]
         if smbus_present == 0:
-             cmdstatus, sfpstatus = cmd.getstatusoutput('i2cget -y 2 0x41 0x3') #need to verify the cpld register logic
+             cmdstatus, sfpstatus = cmd.getstatusoutput('i2cget -y 2 0x41 0x3a') #need to verify the cpld register logic
              sfpstatus = int(sfpstatus, 16)
         else :
              bus = smbus.SMBus(2)
              DEVICE_ADDRESS = 0x41
-             DEVICE_REG = 0x3
+             DEVICE_REG = 0x3a
              sfpstatus = bus.read_byte_data(DEVICE_ADDRESS, DEVICE_REG)
         sfpstatus = sfpstatus&(bit_pos)
         if sfpstatus == 0:
@@ -232,7 +229,6 @@ class SfpUtil(SfpUtilBase):
 
     def get_transceiver_change_event(self, timeout):
         port_dict = {}
-        port = 0
 
         if timeout == 0:
             cd_ms = sys.maxint
@@ -264,7 +260,6 @@ class SfpUtil(SfpUtilBase):
             return True, port_dict
         else:
             return True, {}
-        return False, {}
 
 
 
