@@ -15,7 +15,7 @@ try:
     from sonic_platform.sfp import Sfp
     from sonic_platform.eeprom import Eeprom
     from sonic_platform.fan import Fan
-    from .fan_drawer import RealDrawer, VirtualDrawer
+    from .fan_drawer import  VirtualDrawer
     from sonic_platform.psu import Psu
     from sonic_platform.thermal import Thermal
     from sonic_platform.component import Component
@@ -73,11 +73,11 @@ class Chassis(ChassisBase):
          #   self._sfp_list.append(sfp_node)
 
         # Mux Ordering
-        mux_dev = sorted(glob.glob("/sys/class/i2c-adapter/i2c-1/i2c-*[0-9]*"))
+        #mux_dev = sorted(glob.glob("/sys/class/i2c-adapter/i2c-1/i2c-*[0-9]*"))
         # Enable optoe2 Driver
         eeprom_path = "/sys/class/i2c-adapter/i2c-1/i2c-{0}/{0}-0050/eeprom"
 
-	y = 0
+	#y = 0
         for index in range(self.SFP_PORT_START, self.SFP_PORT_END+1):
             #mux_dev_num = mux_dev[y]
             #port_i2c_map = mux_dev_num.split('-')[-1]

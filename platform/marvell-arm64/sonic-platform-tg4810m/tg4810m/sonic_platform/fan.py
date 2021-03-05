@@ -50,7 +50,7 @@ class Fan(FanBase):
         try:
             with open(reg_file, 'r') as fd:
                 rv = fd.read()
-        except:
+        except Exception as e:
             rv = 'ERR'
 
         rv = rv.rstrip('\r\n')
@@ -68,7 +68,7 @@ class Fan(FanBase):
         try:
             with open(reg_file, 'w') as fd:
                 rv = fd.write(str(value))
-        except:
+        except Exception as e:
             rv = 'ERR'
 
         return rv
@@ -96,7 +96,6 @@ class Fan(FanBase):
 	    cmdstatus, fanstatus = cmd.getstatusoutput('i2cget -y 0 0x20 0x00')
             fanstatus = int(fanstatus, 16)
             logger.log_info(" PMON fan - smbus ERROR - DEBUG presence   ")
-            return False
         else :
             bus = smbus.SMBus(0)
             DEVICE_ADDRESS = 0x20
