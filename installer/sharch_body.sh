@@ -31,7 +31,8 @@ export cur_wd
 archive_path=$(realpath "$0")
 tmp_dir=$(mktemp -d)
 if [ "$(id -u)" = "0" ] ; then
-    mount -t tmpfs tmpfs-installer $tmp_dir || exit 1
+    mount_size=$(df $tmp_dir | tail -1 | tr -s ' ' | cut -d' ' -f4)
+    mount -o size="${mount_size}K" -t tmpfs tmpfs-installer $tmp_dir || exit 1
 fi
 cd $tmp_dir
 echo -n "Preparing image archive ..."
