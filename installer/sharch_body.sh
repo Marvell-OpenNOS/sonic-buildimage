@@ -25,14 +25,19 @@ fi
 
 echo " OK."
 
+image_size=$(du "$0" | awk '{print $1}')
 # Untar and launch install script in a tmpfs
 cur_wd=$(pwd)
 export cur_wd
 archive_path=$(realpath "$0")
 tmp_dir=$(mktemp -d)
 if [ "$(id -u)" = "0" ] ; then
+    mount -t tmpfs tmpfs-installer $tmp_dir || exit 1
     mount_size=$(df $tmp_dir | tail -1 | tr -s ' ' | cut -d' ' -f4)
-    mount -o size="${mount_size}K" -t tmpfs tmpfs-installer $tmp_dir || exit 1
+    if [ "$mount_size" -lt "$((image_size*3))" ]; then
+        mount_size=$((image_size*3))
+        mount -o remount,size="${mount_size}K" -t tmpfs tmpfs-installer $tmp_dir || exit 1
+    fi
 fi
 cd $tmp_dir
 echo -n "Preparing image archive ..."
