@@ -35,9 +35,8 @@ if [ "$(id -u)" = "0" ] ; then
     mount -t tmpfs tmpfs-installer $tmp_dir || exit 1
     mount_size=$(df $tmp_dir | tail -1 | tr -s ' ' | cut -d' ' -f4)
     if [ "$mount_size" -lt "$((image_size*3))" ]; then
-        #align mount_size to next power of two
-        mount_size=$(echo $((image_size*3)) | awk '{ print 2^int(((log($1)/log(2))+ 1)) }')
-        mount -o remount,size="${mount_size}K" -t tmpfs tmpfs-installer $tmp_dir || exit 1
+        mount_size=$((((image_size*3)/1000/1000)+1))
+        mount -o remount,size="${mount_size}G" -t tmpfs tmpfs-installer $tmp_dir || exit 1
     fi
 fi
 cd $tmp_dir
