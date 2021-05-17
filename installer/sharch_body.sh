@@ -25,7 +25,7 @@ fi
 
 echo " OK."
 
-image_size=$(du "$0" | awk '{print $1}')
+image_size=$(( $(sed -e '1,/^exit_marker$/d' "$0"  | tar --to-stdout -xf - | wc -c) / 1024))
 # Untar and launch install script in a tmpfs
 cur_wd=$(pwd)
 export cur_wd
