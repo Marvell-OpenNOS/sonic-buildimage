@@ -34,7 +34,7 @@ tmp_dir=$(mktemp -d)
 if [ "$(id -u)" = "0" ] ; then
     mount -t tmpfs tmpfs-installer $tmp_dir || exit 1
     mount_size=$(df $tmp_dir | tail -1 | tr -s ' ' | cut -d' ' -f4)
-    #checking extra 100KB extra space in tmp_dir, after image extraction
+    #checking extra 100KB space in tmp_dir, after image extraction
     padding=102400
     if [ "$mount_size" -le "$((image_size + padding))" ]; then
         mount_size=$(((image_size/1024/1024)+1))
