@@ -25,7 +25,6 @@ fi
 
 echo " OK."
 
-padding=102400
 image_size=$(( $(sed -e '1,/^exit_marker$/d' "$0"  | tar --to-stdout -xf - | wc -c) / 1024))
 # Untar and launch install script in a tmpfs
 cur_wd=$(pwd)
@@ -35,6 +34,8 @@ tmp_dir=$(mktemp -d)
 if [ "$(id -u)" = "0" ] ; then
     mount -t tmpfs tmpfs-installer $tmp_dir || exit 1
     mount_size=$(df $tmp_dir | tail -1 | tr -s ' ' | cut -d' ' -f4)
+    # Extra space for tmp
+    padding=102400
     if [ "$mount_size" -le "$((image_size + $padding))" ]; then
         mount_size=$((((image_size + $padding)/1024/1024)+1))
         mount -o remount,size="${mount_size}G" -t tmpfs tmpfs-installer $tmp_dir || exit 1
