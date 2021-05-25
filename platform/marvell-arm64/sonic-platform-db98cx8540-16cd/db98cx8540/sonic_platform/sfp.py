@@ -279,20 +279,16 @@ class Sfp(SfpBase):
     _qsfp_ports = range(_port_start, ports_in_block + 1)
 
     def __init__(self, index, sfp_type, eeprom_path, port_i2c_map):
-	#Export eeprom path
 	if not os.path.exists("/sys/bus/i2c/devices/0-0050") :
    	     os.system("echo optoe2 0x50 > /sys/bus/i2c/devices/i2c-0/new_device")
         eeprom_path = '/sys/bus/i2c/devices/0-0050/eeprom'
-        #Reading profile.ini
-	if PLATFORM is not None:
-            cmd = "cat /usr/share/sonic/device/" + PLATFORM + "/" + HWSKU + "/sai.profile | grep hwId | cut -f2 -d="
-        else:
-            cmd = "cat /usr/share/sonic/platform/" + HWSKU + "/sai.profile | grep hwId | cut -f2 -d="
 
+        sai_profile_path=self.__get_path_to_sai_profile_file()
+        cmd = "cat " + path + " | grep hwId | cut -f2 -d="
         port_profile = os.popen(cmd).read()
         self._port_profile = port_profile.split("\n")[0]
         #SFP Initilization 
-	SfpBase.__init__(self)
+        SfpBase.__init__(self)
         self.index = index 
         self.port_num = index
         self.sfp_type = sfp_type 
@@ -355,18 +351,25 @@ class Sfp(SfpBase):
         return os.system(self.HOST_CHK_CMD) == 0
     
     def i2c_set(self, device_addr, offset, value):
-		if smbus_present == 0:
-	cmd = "i2cset -y 0 " + hex(device_addr) + " " + hex(offset) + " " + hex(value)
-	 os.system(cmd)
-	 else:
-	bus = smbus.SMBus(0)
-	bus.write_byte_data(device_addr, offset, value)
+           if smbus_present == 0:
+               cmd = "i2cset -y 0 " + hex(device_addr) + " " + hex(offset) + " " + hex(value)
+               os.system(cmd)
+           else:
+               bus = smbus.SMBus(0)
+               bus.write_byte_data(device_addr, offset, value)
 
     def __get_path_to_port_config_file(self):
         platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
         hwsku_path = "/".join([platform_path, self.HWSKU]
                               ) if self.__is_host() else self.PMON_HWSKU_PATH
         return "/".join([hwsku_path, "port_config.ini"])
+
+    def __get_path_to_sai_profile_file(self):
+        platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
+        hwsku_path = "/".join([platform_path, self.HWSKU]
+                              ) if self.__is_host() else self.PMON_HWSKU_PATH
+        return "/".join([hwsku_path, "sai.profile"])
+
 
     def __read_eeprom_specific_bytes(self, offset, num_bytes):
         sysfsfile_eeprom = None
