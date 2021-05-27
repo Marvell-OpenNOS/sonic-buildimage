@@ -47,7 +47,7 @@ class Eeprom(TlvInfoDecoder):
 
         if self.is_sys_eeprom:
             self.start_offset = 0
-            self.eeprom_path = self.I2C_DIR + "i2c-0/0-0050/eeprom"
+            self.eeprom_path = "/etc/sonic/eeprom"
             # System EEPROM is in ONIE TlvInfo EEPROM format
             super(Eeprom, self).__init__(self.eeprom_path,
                                          self.start_offset, '', True)

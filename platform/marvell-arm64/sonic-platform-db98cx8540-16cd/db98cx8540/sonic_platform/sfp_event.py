@@ -117,8 +117,13 @@ EVENT_ON_ALL_SFP = '-1'
 SYSTEM_NOT_READY = 'system_not_ready'
 SYSTEM_READY = 'system_become_ready'
 SYSTEM_FAIL = 'system_fail'
+
+PLATFORM_ROOT_PATH = "/usr/share/sonic/device"
+PMON_HWSKU_PATH = "/usr/share/sonic/hwsku"
+HOST_CHK_CMD = "docker > /dev/null 2>&1"
 PLATFORM = "arm64-marvell_db98cx8540_16cd-r0"
 HWSKU = "db98cx8540_16cd"
+
 # SFP PORT numbers
 SFP_PORT_START = 1
 SFP_PORT_END = 132
@@ -142,11 +147,8 @@ class sfp_event:
         while(x<self.port_end+1):
             self.port_to_eeprom_mapping[x] = eeprom_path
             x = x + 1
-        if PLATFORM is not None:
-            cmd = "cat /usr/share/sonic/device/" + PLATFORM + "/" + HWSKU + "/sai.profile | grep hwId | cut -f2 -d="
-        else:
-            cmd = "cat /usr/share/sonic/platform/" + HWSKU + "/sai.profile | grep hwId | cut -f2 -d="
-
+        path=self.__get_path_to_sai_file()
+        cmd = "cat " + path + " | grep hwId | cut -f2 -d="
         port_profile = os.popen(cmd).read()
         self._port_profile = port_profile.split("\n")[0]
  
@@ -191,8 +193,13 @@ class sfp_event:
 
         return sfpstatus
 
-        
-    def check_sfp_status(self, port_change, timeout):
+      def __get_path_to_sai_file(self):
+        platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
+        hwsku_path = "/".join([platform_path, self.HWSKU]
+                              ) if self.__is_host() else self.PMON_HWSKU_PATH
+        return "/".join([hwsku_path, "sai.profile"])
+
+      def check_sfp_status(self, port_change, timeout):
         """
          check_sfp_status called from get_change_event,
             this will return correct status of all 4 SFP ports if there is a change in any of them 

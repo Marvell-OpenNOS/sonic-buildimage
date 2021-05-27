@@ -25,7 +25,7 @@ smbus_present = 1
 
 try:
     import smbus
-except ImportError as e:
+except ImportError, e:
     smbus_present = 0
 
 profile_16x400G = {
@@ -123,10 +123,8 @@ sfputil_profiles = {
  "FC48x25G8x100G":profile_48x25G_8x100G
 }
 
-
 INFO_OFFSET = 128
 DOM_OFFSET = 0
-
 # definitions of the offset and width for values in XCVR info eeprom
 XCVR_INTFACE_BULK_OFFSET = 0
 XCVR_INTFACE_BULK_WIDTH_QSFP = 20
@@ -253,50 +251,33 @@ COPPER_TYPE = "COPPER"
 SFP_TYPE = "SFP"
 QSFP_TYPE = "QSFP"
 OSFP_TYPE = "OSFP"
-
-# SFP PORT numbers
-SFP_PORT_START = 1
-SFP_PORT_END = 132
-
 SYSLOG_IDENTIFIER = "xcvrd"
 logger = Logger(SYSLOG_IDENTIFIER)
 
 class Sfp(SfpBase):
-    #Hwsku and profile.ini path
     PLATFORM_ROOT_PATH = "/usr/share/sonic/device"
     PMON_HWSKU_PATH = "/usr/share/sonic/hwsku"
     HOST_CHK_CMD = "docker > /dev/null 2>&1"
-    #Define PLATFORM_NAME and HWSKU
     PLATFORM = "arm64-marvell_db98cx8540_16cd-r0"
     HWSKU = "db98cx8540_16cd"
-     #Default Profile
-    _port_profile = "FALCON16X25G"
     _port_start = 1
     _port_end = 132
-    ports_in_block = 132
     port_to_i2c_mapping = 0
-    _port_to_eeprom_mapping = {}
-    _qsfp_ports = range(_port_start, ports_in_block + 1)
 
     def __init__(self, index, sfp_type, eeprom_path, port_i2c_map):
-	if not os.path.exists("/sys/bus/i2c/devices/0-0050") :
-   	     os.system("echo optoe2 0x50 > /sys/bus/i2c/devices/i2c-0/new_device")
-        eeprom_path = '/sys/bus/i2c/devices/0-0050/eeprom'
-
-        sai_profile_path=self.__get_path_to_sai_profile_file()
-        cmd = "cat " + path + " | grep hwId | cut -f2 -d="
-        port_profile = os.popen(cmd).read()
-        self._port_profile = port_profile.split("\n")[0]
-        #SFP Initilization 
         SfpBase.__init__(self)
-        self.index = index 
+        self.index = index
         self.port_num = index
-        self.sfp_type = sfp_type 
-        self.eeprom_path = eeprom_path 
-        self.port_to_i2c_mapping = port_i2c_map 
+        self.sfp_type = sfp_type
+        self.eeprom_path = eeprom_path
+        self.port_to_i2c_mapping = port_i2c_map
         self.port_name = sfp_type + str(index)
         self.port_to_eeprom_mapping = {}
         self.port_to_eeprom_mapping[index] = eeprom_path
+        sai_profile_path = self.__get_path_to_sai_profile_file()
+        cmd = "cat " + sai_profile_path  + " | grep hwId | cut -f2 -d="
+        port_profile = os.popen(cmd).read()
+        self._port_profile = port_profile.split("\n")[0]
 
         self.info_dict_keys = ['type', 'hardware_rev', 'serial', 'manufacturer',
                                'model', 'connector', 'encoding', 'ext_identifier',
@@ -324,7 +305,6 @@ class Sfp(SfpBase):
         self.dom_rx_power_supported = False
         self.dom_tx_power_supported = False
         self.calibration = 0
-
         self._dom_capability_detect()
 
     def __convert_string_to_num(self, value_str):
@@ -351,25 +331,24 @@ class Sfp(SfpBase):
         return os.system(self.HOST_CHK_CMD) == 0
     
     def i2c_set(self, device_addr, offset, value):
-           if smbus_present == 0:
-               cmd = "i2cset -y 0 " + hex(device_addr) + " " + hex(offset) + " " + hex(value)
-               os.system(cmd)
-           else:
-               bus = smbus.SMBus(0)
-               bus.write_byte_data(device_addr, offset, value)
+        if smbus_present == 0:
+                cmd = "i2cset -y 0 " + hex(device_addr) + " " + hex(offset) + " " + hex(value)
+                os.system(cmd)
+        else:
+                bus = smbus.SMBus(0)
+                bus.write_byte_data(device_addr, offset, value)
 
     def __get_path_to_port_config_file(self):
         platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
         hwsku_path = "/".join([platform_path, self.HWSKU]
                               ) if self.__is_host() else self.PMON_HWSKU_PATH
         return "/".join([hwsku_path, "port_config.ini"])
-
+ 
     def __get_path_to_sai_profile_file(self):
         platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
         hwsku_path = "/".join([platform_path, self.HWSKU]
                               ) if self.__is_host() else self.PMON_HWSKU_PATH
         return "/".join([hwsku_path, "sai.profile"])
-
 
     def __read_eeprom_specific_bytes(self, offset, num_bytes):
         sysfsfile_eeprom = None
@@ -378,7 +357,7 @@ class Sfp(SfpBase):
         for i in range(0, num_bytes):
             eeprom_raw.append("0x00")
 
-        sysfs_sfp_i2c_client_eeprom_path = '/sys/bus/i2c/devices/0-0050/eeprom'
+        sysfs_sfp_i2c_client_eeprom_path = self.port_to_eeprom_mapping[self.port_num]
 
         try:
             sysfsfile_eeprom = open(
@@ -830,6 +809,7 @@ class Sfp(SfpBase):
             transceiver_dom_info_dict['tx1power'] = self.__convert_string_to_num(
                 dom_channel_monitor_data['data']['TXPower']['value'])
 
+        transceiver_dom_info_dict['rx_los'] = self.get_rx_los()
         transceiver_dom_info_dict['tx_fault'] = self.get_tx_fault()
         transceiver_dom_info_dict['reset_status'] = self.get_reset_status()
         transceiver_dom_info_dict['lp_mode'] = self.get_lpmode()
@@ -1004,7 +984,6 @@ class Sfp(SfpBase):
             A Boolean, True if SFP has RX LOS, False if not.
         """
         return False
-
     def get_tx_fault(self):
         """
         Retrieves the TX fault status of SFP
@@ -1012,7 +991,6 @@ class Sfp(SfpBase):
             A Boolean, True if SFP has TX fault, False if not
             Note : TX fault status is lached until a call to get_tx_fault or a reset.
         """
-
         return False
 
     def get_tx_disable(self):
@@ -1022,7 +1000,7 @@ class Sfp(SfpBase):
             A Boolean, True if tx_disable is enabled, False if disabled
         """
         return False
-
+ 
     def get_tx_disable_channel(self):
         """
         Retrieves the TX disabled channels in this SFP
@@ -1032,7 +1010,14 @@ class Sfp(SfpBase):
             As an example, a returned value of 0x5 indicates that channel 0
             and channel 2 have been disabled.
         """
-        return False
+        tx_disable_list = self.get_tx_disable()
+        if tx_disable_list is None:
+            return 0
+        tx_disabled = 0
+        for i in range(len(tx_disable_list)):
+            if tx_disable_list[i]:
+                tx_disabled |= 1 << i
+        return tx_disabled
 
     def get_lpmode(self):
         """
@@ -1054,7 +1039,6 @@ class Sfp(SfpBase):
         if self.sfp_type == COPPER_TYPE:
             return False
         if self.sfp_type == QSFP_TYPE:
-            offset = 0
             sfpd_obj = sff8436Dom()
             if sfpd_obj is None:
                 return False
@@ -1240,7 +1224,6 @@ class Sfp(SfpBase):
         """
         if self.sfp_type == COPPER_TYPE:
             return False
-
         # Check for invalid port_num
         if self.port_num < self._port_start or self.port_num > self._port_end:
             return False
@@ -1260,6 +1243,7 @@ class Sfp(SfpBase):
         reg_file.close()
         return True
 
+
     def tx_disable(self, tx_disable):
         """
         Disable SFP TX for all channels
@@ -1269,6 +1253,25 @@ class Sfp(SfpBase):
         Returns:
             A boolean, True if tx_disable is set successfully, False if not
         """
+        if self.sfp_type == QSFP_TYPE:
+            sysfsfile_eeprom = None
+            try:
+                tx_disable_ctl = 0xf if tx_disable else 0x0
+                buffer = create_string_buffer(1)
+                buffer[0] = chr(tx_disable_ctl)
+                # Write to eeprom
+                sysfsfile_eeprom = open(
+                    self.port_to_eeprom_mapping[self.port_num], "r+b")
+                sysfsfile_eeprom.seek(QSFP_CONTROL_OFFSET)
+                sysfsfile_eeprom.write(buffer[0])
+            except IOError as e:
+                print("Error: unable to open file: %s" % str(e))
+                return False
+            finally:
+                if sysfsfile_eeprom is not None:
+                    sysfsfile_eeprom.close()
+                    time.sleep(0.01)
+            return True
         return False
 
     def tx_disable_channel(self, channel, disable):
@@ -1282,6 +1285,29 @@ class Sfp(SfpBase):
         Returns:
             A boolean, True if successful, False if not
         """
+        if self.sfp_type == QSFP_TYPE:
+            sysfsfile_eeprom = None
+            try:
+                channel_state = self.get_tx_disable_channel()
+                tx_enable_mask = [0xe, 0xd, 0xb, 0x7]
+                tx_disable_mask = [0x1, 0x3, 0x7, 0xf]
+                tx_disable_ctl = channel_state | tx_disable_mask[
+                    channel] if disable else channel_state & tx_enable_mask[channel]
+                buffer = create_string_buffer(1)
+                buffer[0] = chr(tx_disable_ctl)
+                # Write to eeprom
+                sysfsfile_eeprom = open(
+                    self.port_to_eeprom_mapping[self.port_num], "r+b")
+                sysfsfile_eeprom.seek(QSFP_CONTROL_OFFSET)
+                sysfsfile_eeprom.write(buffer[0])
+            except IOError as e:
+                print("Error: unable to open file: %s" % str(e))
+                return False
+            finally:
+                if sysfsfile_eeprom is not None:
+                    sysfsfile_eeprom.close()
+                    time.sleep(0.01)
+            return True
         return False
 
     def set_lpmode(self, lpmode):
@@ -1350,7 +1376,7 @@ class Sfp(SfpBase):
         """
         sfputil_helper = SfpUtilHelper()
         sfputil_helper.read_porttab_mappings(
-            self.__get_path_to_port_config_file())
+        self.__get_path_to_port_config_file())
         name = sfputil_helper.logical[self.index] or "Unknown"
         return name
 
@@ -1361,6 +1387,7 @@ class Sfp(SfpBase):
             bool: True if is present, False if not
         """
         port_index = self.port_num-1
+        sysfs_sfp_i2c_client_eeprom_path = self.port_to_eeprom_mapping[self.port_num]
         profile = sfputil_profiles[self._port_profile]
         if  port_index not in profile:
             return False
@@ -1369,16 +1396,15 @@ class Sfp(SfpBase):
             bin_offset = 1<<offset
             device_reg = int(profile[port_index].split(",")[0],16)
             self.i2c_set(device_reg, 0, bin_offset)
-            path = "/sys/bus/i2c/devices/0-0050/eeprom"
             try:
-                reg_file = open(path, 'rb')
+                reg_file = open(sysfs_sfp_i2c_client_eeprom_path, 'rb')
                 reg_file.seek(1)
                 reg_file.read(2)
             except IOError as e:
                 return False
 
             return True
-    
+
     def get_model(self):
         """
         Retrieves the model number (or part number) of the device
