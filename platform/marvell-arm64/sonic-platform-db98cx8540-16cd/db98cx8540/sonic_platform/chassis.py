@@ -160,11 +160,12 @@ class Chassis(ChassisBase):
 
         for index in range(self.SFP_PORT_START, self.SFP_PORT_END+1):
             i2cdev = 0
+            port=index-1
             port_eeprom_path = eeprom_path
             profile = sfputil_profiles[self._port_profile]
             if not os.path.exists(port_eeprom_path):
 	    	logger.log_info(" DEBUG - path %s -- did not exist " % port_eeprom_path )
-            if index in profile:
+            if port in profile:
                 sfp_node = Sfp(index, 'QSFP', port_eeprom_path, i2cdev )
                 self._sfp_list.append(sfp_node)
         self.sfp_event_initialized = False
