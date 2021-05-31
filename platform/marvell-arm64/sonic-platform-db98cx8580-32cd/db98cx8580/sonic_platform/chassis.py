@@ -174,7 +174,7 @@ class Chassis(ChassisBase):
             if not os.path.exists(port_eeprom_path):
 	    	logger.log_info(" DEBUG - path %s -- did not exist " % port_eeprom_path )
             if port in profile:
-                sfp_node = Sfp(index, 'SFP', port_eeprom_path, i2cdev )
+                sfp_node = Sfp(index, 'QSFP', port_eeprom_path, i2cdev )
                 self._sfp_list.append(sfp_node)
         self.sfp_event_initialized = False
 
