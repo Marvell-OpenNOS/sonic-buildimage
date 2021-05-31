@@ -4,6 +4,7 @@ listen to the SDK for the SFP change event and return to chassis.
 '''
 
 from __future__ import print_function
+import os
 import sys
 import time
 from sonic_daemon_base.daemon_base import Logger
