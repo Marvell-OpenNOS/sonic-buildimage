@@ -4,7 +4,6 @@ listen to the SDK for the SFP change event and return to chassis.
 '''
 
 from __future__ import print_function
-import os
 import sys
 import time
 from sonic_daemon_base.daemon_base import Logger
@@ -15,7 +14,6 @@ try:
     import smbus
 except ImportError, e:
     smbus_present = 0
-
 
 
 profile_32x400G = {
@@ -132,7 +130,7 @@ SYSTEM_FAIL = 'system_fail'
 PLATFORM_ROOT_PATH = "/usr/share/sonic/device"
 PMON_HWSKU_PATH = "/usr/share/sonic/hwsku"
 HOST_CHK_CMD = "docker > /dev/null 2>&1"
-PLATFORM = "arm64-marvell_db98cx8580_32cd-r0"
+PLATFORM = "x86_64-marvell_db98cx8580_32cd-r0"
 HWSKU = "db98cx8580_32cd"
 
 # SFP PORT numbers
@@ -150,16 +148,12 @@ class sfp_event:
     def __init__(self):
         
         self.handle = None
-        self.port_to_eeprom_mapping = {}
-	self.SFP_PORT_START=SFP_PORT_START
-        self.SFP_PORT_END=SFP_PORT_END
-        self.PLATFORM_ROOT_PATH=PLATFORM_ROOT_PATH
-        self.PLATFORM=PLATFORM
-
+	self.port_start=SFP_PORT_START
+        self.port_end=SFP_PORT_END
         eeprom_path="/sys/bus/i2c/devices/0-0050/eeprom"
 
-	x = self.self.SFP_PORT_START
-        while(x<self.SFP_PORT_END+1):
+	x = self.port_start
+        while(x<self.port_end+1):
             self.port_to_eeprom_mapping[x] = eeprom_path
             x = x + 1
         path=self.__get_path_to_sai_file()
@@ -172,28 +166,18 @@ class sfp_event:
         # Get Transceiver status
         time.sleep(5)
         self.modprs_register = self._get_transceiver_status()
+        logger.log_info("Initial SFP presence  =   %d" % self.modprs_register )
 
     def deinitialize(self):
         if self.handle is None:
             return
-
-    def __is_host(self):
-        return os.system(self.HOST_CHK_CMD) == 0
-
-    def i2c_set(self, device_addr, offset, value):
-        if smbus_present == 0:
-            cmd = "i2cset -y 0 " + hex(device_addr) + " " + hex(offset) + " " + hex(value)
-            os.system(cmd)
-        else:
-            bus = smbus.SMBus(0)
-            bus.write_byte_data(device_addr, offset, value)
       
 
     def _get_transceiver_status(self):
 	if smbus_present == 0:
+            sfpstatus_bin = ''
             logger.log_info("  PMON - smbus ERROR - DEBUG sfp_event   ")
-	sfp_status = 0
-	x = 0
+
         for index in range(self.SFP_PORT_START, self.SFP_PORT_END+1):
                 port_index = index-1
                 profile = sfputil_profiles[self._port_profile]
@@ -201,26 +185,30 @@ class sfp_event:
                         offset = int(profile[port_index].split(",")[1])
                         bin_offset = 1<<offset
                         device_reg = int(profile[port_index].split(",")[0],16)
-                        self.i2c_set(device_reg, 0, bin_offset)
-                        path = "/sys/bus/i2c/devices/0-0050/eeprom"
-                        try:
-                             reg_file = open(path, 'rb')
-                             reg_file.seek(1)
-                             reg_file.read(2)
-			     sfp_status=( x | (1<<index-self.SFP_PORT_START)) + sfp_status
-                        except IOError as e:
-			     sfp_status=( x & ~(1<<index-self.SFP_PORT_START)) + sfp_status
+                self.i2c_set(device_reg, 0, bin_offset)
+                path = "/sys/bus/i2c/devices/0-0050/eeprom"
+                try:
+                        reg_file = open(path, 'rb')
+                        reg_file.seek(1)
+                        reg_file.read(2)
+                except IOError as e:
+		        sfp_status = 0
+    			sfpstatus_bin = str(sfp_status) + sfpstatus_bin
+		sfp_status = 0
+    		sfpstatus_bin = str(sfp_status) + sfpstatus_bin
 
-	sfp_status = ~sfp_status
-        return sfp_status
+	sfpstatus_bin = ''.join('1' if j == '0' else '0' for j in sfpstatus_bin)
+	sfpstatus = int(sfpstatus_bin,2)
 
-    def __get_path_to_sai_file(self):
+        return sfpstatus
+
+      def __get_path_to_sai_file(self):
         platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
         hwsku_path = "/".join([platform_path, self.HWSKU]
                               ) if self.__is_host() else self.PMON_HWSKU_PATH
         return "/".join([hwsku_path, "sai.profile"])
 
-    def check_sfp_status(self, port_change, timeout):
+      def check_sfp_status(self, port_change, timeout):
         """
          check_sfp_status called from get_change_event,
             this will return correct status of all 4 SFP ports if there is a change in any of them 
@@ -248,16 +236,15 @@ class sfp_event:
                 changed_ports = (self.modprs_register ^ reg_value)
                 while (port >= SFP_PORT_START and port <= SFP_PORT_END):
 		    profile = sfputil_profiles[self._port_profile]
-                    port_index = port - 1 
                     if  port_index in profile:
                     	# Mask off the bit corresponding to our port
                     	mask = (1 << port-SFP_PORT_START)
                     	if (changed_ports & mask):
                         	# ModPrsL is active high
                         	if reg_value & mask == 0:
-                            	      port_change[port] = '1'
+                            	port_change[port] = '0'
                         	else:
-                            	      port_change[port] = '0'
+                            	port_change[port] = '1'
                     	port += 1
                 # Update reg value
                 self.modprs_register = reg_value

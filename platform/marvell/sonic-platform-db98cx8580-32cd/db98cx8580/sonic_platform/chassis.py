@@ -1,21 +1,25 @@
 #!/usr/bin/env python
-'''
-listen to the SDK for the SFP change event and return to chassis.
-'''
-
-from __future__ import print_function
-import os
-import sys
-import time
-from sonic_daemon_base.daemon_base import Logger
-
-smbus_present = 1
+##################################################################
+# Module contains an implementation of SONiC Platform Base API and
+# provides the platform information
+##################################################################
 
 try:
-    import smbus
-except ImportError, e:
-    smbus_present = 0
+    import os
+    import sys
+    from sonic_platform_base.chassis_base import ChassisBase
+    from sonic_platform.sfp import Sfp
+    from sonic_platform.eeprom import Eeprom
+    from sonic_daemon_base.daemon_base import Logger
+except ImportError as e:
+    raise ImportError(str(e) + "- required module not found")
 
+MAX_SELECT_DELAY = 3600
+COPPER_PORT_START = 0
+COPPER_PORT_END = 0
+SFP_PORT_START = 1
+SFP_PORT_END = 257
+PORT_END = 257
 
 
 profile_32x400G = {
@@ -123,153 +127,228 @@ sfputil_profiles = {
 }
 
 
-# system level event/error
-EVENT_ON_ALL_SFP = '-1'
-SYSTEM_NOT_READY = 'system_not_ready'
-SYSTEM_READY = 'system_become_ready'
-SYSTEM_FAIL = 'system_fail'
+SYSLOG_IDENTIFIER = "chassis"
+logger = Logger()
 
-PLATFORM_ROOT_PATH = "/usr/share/sonic/device"
-PMON_HWSKU_PATH = "/usr/share/sonic/hwsku"
-HOST_CHK_CMD = "docker > /dev/null 2>&1"
-PLATFORM = "arm64-marvell_db98cx8580_32cd-r0"
-HWSKU = "db98cx8580_32cd"
+class Chassis(ChassisBase):
+    """
+    Platform-specific Chassis class
+    derived from Dell S6000 platform.
+    customized for the platform.
+    """
+    reset_reason_dict = {}
+    reset_reason_dict[0x02] = ChassisBase.REBOOT_CAUSE_POWER_LOSS
+    reset_reason_dict[0x20] = ChassisBase.REBOOT_CAUSE_THERMAL_OVERLOAD_ASIC
 
-# SFP PORT numbers
-SFP_PORT_START = 1
-SFP_PORT_END = 257
-
-
-SYSLOG_IDENTIFIER = "sfp_event"
-logger = Logger(SYSLOG_IDENTIFIER)
-
-class sfp_event:
-    ''' Listen to plugin/plugout cable events '''
+    reset_reason_dict[0x08] = ChassisBase.REBOOT_CAUSE_THERMAL_OVERLOAD_CPU
+    reset_reason_dict[0x10] = ChassisBase.REBOOT_CAUSE_WATCHDOG
+    PLATFORM_ROOT_PATH = "/usr/share/sonic/device"
+    PMON_HWSKU_PATH = "/usr/share/sonic/hwsku"
+    HOST_CHK_CMD = "docker > /dev/null 2>&1"
+    PLATFORM = "x86_64-marvell_db98cx8580_32cd-r0"
+    HWSKU = "db98cx8580_32cd"
 
 
     def __init__(self):
-        
-        self.handle = None
-        self.port_to_eeprom_mapping = {}
-	self.SFP_PORT_START=SFP_PORT_START
-        self.SFP_PORT_END=SFP_PORT_END
-        self.PLATFORM_ROOT_PATH=PLATFORM_ROOT_PATH
-        self.PLATFORM=PLATFORM
+        ChassisBase.__init__(self)
+        # Port numbers for Initialize SFP list
+        self.COPPER_PORT_START = COPPER_PORT_START
+        self.COPPER_PORT_END = COPPER_PORT_END
+        self.SFP_PORT_START = SFP_PORT_START
+        self.SFP_PORT_END = SFP_PORT_END
+        self.PORT_END = PORT_END
 
-        eeprom_path="/sys/bus/i2c/devices/0-0050/eeprom"
-
-	x = self.self.SFP_PORT_START
-        while(x<self.SFP_PORT_END+1):
-            self.port_to_eeprom_mapping[x] = eeprom_path
-            x = x + 1
-        path=self.__get_path_to_sai_file()
-        cmd = "cat " + path + " | grep hwId | cut -f2 -d="
+        sai_profile_path=self.__get_path_to_sai_profile_file()
+        cmd = "cat " + sai_profile_path + " | grep hwId | cut -f2 -d="
         port_profile = os.popen(cmd).read()
         self._port_profile = port_profile.split("\n")[0]
- 
-    def initialize(self):       
-        self.modprs_register = 0 
-        # Get Transceiver status
-        time.sleep(5)
-        self.modprs_register = self._get_transceiver_status()
 
-    def deinitialize(self):
-        if self.handle is None:
-            return
+	if not os.path.exists("/sys/bus/i2c/devices/0-0050") :
+             os.system("echo optoe2 0x50 > /sys/bus/i2c/devices/i2c-0/new_device")
+        eeprom_path = '/sys/bus/i2c/devices/0-0050/eeprom'
+
+        for index in range(self.SFP_PORT_START, self.SFP_PORT_END+1):
+            i2cdev = 0
+            port_eeprom_path = eeprom_path
+            profile = sfputil_profiles[self._port_profile]
+            if not os.path.exists(port_eeprom_path):
+	    	logger.log_info(" DEBUG - path %s -- did not exist " % port_eeprom_path )
+            if index in profile:
+                sfp_node = Sfp(index, 'QSFP', port_eeprom_path, i2cdev )
+                self._sfp_list.append(sfp_node)
+        self.sfp_event_initialized = False
+
+        # Instantiate ONIE system eeprom object
+        self._eeprom = Eeprom()
 
     def __is_host(self):
         return os.system(self.HOST_CHK_CMD) == 0
 
-    def i2c_set(self, device_addr, offset, value):
-        if smbus_present == 0:
-            cmd = "i2cset -y 0 " + hex(device_addr) + " " + hex(offset) + " " + hex(value)
-            os.system(cmd)
-        else:
-            bus = smbus.SMBus(0)
-            bus.write_byte_data(device_addr, offset, value)
-      
-
-    def _get_transceiver_status(self):
-	if smbus_present == 0:
-            logger.log_info("  PMON - smbus ERROR - DEBUG sfp_event   ")
-	sfp_status = 0
-	x = 0
-        for index in range(self.SFP_PORT_START, self.SFP_PORT_END+1):
-                port_index = index-1
-                profile = sfputil_profiles[self._port_profile]
-                if  port_index in profile:
-                        offset = int(profile[port_index].split(",")[1])
-                        bin_offset = 1<<offset
-                        device_reg = int(profile[port_index].split(",")[0],16)
-                        self.i2c_set(device_reg, 0, bin_offset)
-                        path = "/sys/bus/i2c/devices/0-0050/eeprom"
-                        try:
-                             reg_file = open(path, 'rb')
-                             reg_file.seek(1)
-                             reg_file.read(2)
-			     sfp_status=( x | (1<<index-self.SFP_PORT_START)) + sfp_status
-                        except IOError as e:
-			     sfp_status=( x & ~(1<<index-self.SFP_PORT_START)) + sfp_status
-
-	sfp_status = ~sfp_status
-        return sfp_status
-
-    def __get_path_to_sai_file(self):
+    def __get_path_to_sai_profile_file(self):
         platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
         hwsku_path = "/".join([platform_path, self.HWSKU]
-                              ) if self.__is_host() else self.PMON_HWSKU_PATH
+                                ) if self.__is_host() else self.PMON_HWSKU_PATH
         return "/".join([hwsku_path, "sai.profile"])
 
-    def check_sfp_status(self, port_change, timeout):
-        """
-         check_sfp_status called from get_change_event,
-            this will return correct status of all 4 SFP ports if there is a change in any of them 
-        """
-    
-        start_time = time.time()
-        port = SFP_PORT_START
-        forever = False
 
-        if timeout == 0:
-            forever = True
-        elif timeout > 0:
-            timeout = timeout / float(1000) # Convert to secs
+    def get_sfp(self, index):
+        """
+        Retrieves sfp represented by (1-based) index <index>
+        Args:
+            index: An integer, the index (1-based) of the sfp to retrieve.
+            The index should be the sequence of physical SFP ports in a chassis,
+            starting from 1.
+            For example, 1 for first SFP port in the chassis and so on.
+        Returns:
+            An object dervied from SfpBase representing the specified sfp
+        """
+        sfp = None
+        try:
+            # The index will start from 1
+            sfp = self._sfp_list[index-1]
+        except IndexError:
+            sys.stderr.write("SFP index {} out of range (1-{})\n".format(
+                             index, len(self._sfp_list)))
+        return sfp
+
+    def get_name(self):
+        """
+        Retrieves the name of the chassis
+        Returns:
+            string: The name of the chassis
+        """
+        return self._eeprom.modelstr()
+
+    def get_presence(self):
+        """
+        Retrieves the presence of the chassis
+        Returns:
+            bool: True if chassis is present, False if not
+        """
+        return True
+
+    def get_model(self):
+        """
+        Retrieves the model number (or part number) of the chassis
+        Returns:
+            string: Model/part number of chassis
+        """
+        return self._eeprom.part_number_str()
+
+    def get_serial(self):
+        """
+        Retrieves the serial number of the chassis (Service tag)
+        Returns:
+            string: Serial number of chassis
+        """
+        return self._eeprom.serial_str()
+
+    def get_status(self):
+        """
+        Retrieves the operational status of the chassis
+        Returns:
+            bool: A boolean value, True if chassis is operating properly
+            False if not
+        """
+        return True
+
+    def get_base_mac(self):
+        """
+        Retrieves the base MAC address for the chassis
+
+        Returns:
+            A string containing the MAC address in the format
+            'XX:XX:XX:XX:XX:XX'
+        """
+        return self._eeprom.base_mac_addr()
+
+    def get_serial_number(self):
+        """
+        Retrieves the hardware serial number for the chassis
+
+        Returns:
+            A string containing the hardware serial number for this
+            chassis.
+        """
+        return self._eeprom.serial_number_str()
+
+    def get_system_eeprom_info(self):
+        """
+        Retrieves the full content of system EEPROM information for the
+        chassis
+
+        Returns:
+            A dictionary where keys are the type code defined in
+            OCP ONIE TlvInfo EEPROM format and values are their
+            corresponding values.
+        """
+        return self._eeprom.system_eeprom_info()
+
+    def get_reboot_cause(self):
+        """
+        Retrieves the cause of the previous reboot
+        Returns:
+            A tuple (string, string) where the first element is a string
+            containing the cause of the previous reboot. This string must be
+            one of the predefined strings in this class. If the first string
+            is "REBOOT_CAUSE_HARDWARE_OTHER", the second string can be used
+            to pass a description of the reboot cause.
+        """
+        #lrr = self._get_cpld_register('mb_reboot_cause')
+        #if (lrr != 'ERR'):
+        #    reset_reason = lrr
+        #    if (reset_reason in self.reset_reason_dict):
+        #        return (self.reset_reason_dict[reset_reason], None)
+        #
+        return (ChassisBase.REBOOT_CAUSE_NON_HARDWARE, None)
+
+    def get_change_event(self, timeout=0):
+        """
+        Returns a nested dictionary containing all devices which have
+        experienced a change at chassis level
+        Args:
+            timeout: Timeout in milliseconds (optional). If timeout == 0,
+                this method will block until a change is detected.
+        Returns:
+            (bool, dict):
+                - True if call successful, False if not;
+                - A nested dictionary where key is a device type,
+                  value is a dictionary with key:value pairs in the format of
+                  {'device_id':'device_event'},
+                  where device_id is the device ID for this device and
+                        device_event,
+                             status='1' represents device inserted,
+                             status='0' represents device removed.
+                  Ex. {'fan':{'0':'0', '2':'1'}, 'sfp':{'11':'0'}}
+                      indicates that fan 0 has been removed, fan 2
+                      has been inserted and sfp 11 has been removed.
+        """
+        # Initialize SFP event first
+        if not self.sfp_event_initialized:
+            from sonic_platform.sfp_event import sfp_event
+            self.sfp_event = sfp_event()
+            self.sfp_event.initialize()
+            self.MAX_SELECT_EVENT_RETURNED = self.PORT_END
+            self.sfp_event_initialized = True
+
+        wait_for_ever = (timeout == 0)
+        port_dict = {}
+        if wait_for_ever:
+            # xrcvd will call this monitor loop in the "SYSTEM_READY" state
+            # logger.log_info(" wait_for_ever get_change_event %d" % timeout)
+            timeout = MAX_SELECT_DELAY
+            while True:
+                status = self.sfp_event.check_sfp_status( port_dict, timeout)
+                if not port_dict == {}:
+                    break
         else:
-            return False, {}
-        end_time = start_time + timeout
+            # At boot up and in "INIT" state call from xrcvd will have a timeout value
+            # return true without change after timeout and will transition to "SYSTEM_READY"
+            # logger.log_info(" initial get_change_event %d" % timeout )
+            status = self.sfp_event.check_sfp_status( port_dict, timeout)
 
-        if (start_time > end_time):
-            return False, {} # Time wrap or possibly incorrect timeout
+        if status:
+            return True, {'sfp':port_dict}
+        else:
+            return True, {'sfp':{}}
 
-        while (timeout >= 0):
-            # Check for OIR events and return updated port_change
-            reg_value = self._get_transceiver_status()
-            if (reg_value != self.modprs_register):
-                changed_ports = (self.modprs_register ^ reg_value)
-                while (port >= SFP_PORT_START and port <= SFP_PORT_END):
-		    profile = sfputil_profiles[self._port_profile]
-                    port_index = port - 1 
-                    if  port_index in profile:
-                    	# Mask off the bit corresponding to our port
-                    	mask = (1 << port-SFP_PORT_START)
-                    	if (changed_ports & mask):
-                        	# ModPrsL is active high
-                        	if reg_value & mask == 0:
-                            	      port_change[port] = '1'
-                        	else:
-                            	      port_change[port] = '0'
-                    	port += 1
-                # Update reg value
-                self.modprs_register = reg_value
-                return True, port_change
-
-            if forever:
-                time.sleep(1)
-            else:
-                timeout = end_time - time.time()
-                if timeout >= 1:
-                    time.sleep(1) # We poll at 1 second granularity
-                else:
-                    if timeout > 0:
-                        time.sleep(timeout)
-                    return True, {}

@@ -196,15 +196,15 @@ class sfp_event:
                         offset = int(profile[port_index].split(",")[1])
                         bin_offset = 1<<offset
                         device_reg = int(profile[port_index].split(",")[0],16)
-                self.i2c_set(device_reg, 0, bin_offset)
-                path = "/sys/bus/i2c/devices/0-0050/eeprom"
-                try:
-                        reg_file = open(path, 'rb')
-                        reg_file.seek(1)
-                        reg_file.read(2)
-                        sfp_status=( x | (1<<index-self.SFP_PORT_START)) + sfp_status
-                except IOError as e:
-                        sfp_status=( x & ~(1<<index-self.SFP_PORT_START)) + sfp_status
+                        self.i2c_set(device_reg, 0, bin_offset)
+                        path = "/sys/bus/i2c/devices/0-0050/eeprom"
+                        try:
+                                reg_file = open(path, 'rb')
+                                reg_file.seek(1)
+                                reg_file.read(2)
+                                sfp_status=( x | (1<<index-self.SFP_PORT_START)) + sfp_status
+                        except IOError as e:
+                                sfp_status=( x & ~(1<<index-self.SFP_PORT_START)) + sfp_status
 
         sfp_status = ~sfp_status
         return sfp_status
