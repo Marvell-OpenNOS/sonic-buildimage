@@ -7,13 +7,13 @@ from __future__ import print_function
 import sys
 import os
 import time
-from sonic_daemon_base.daemon_base import Logger
+from sonic_py_common import logger
 
 smbus_present = 1
 
 try:
     import smbus
-except ImportError, e:
+except ImportError as e:
     smbus_present = 0
 
 profile_16x400G = {
@@ -131,7 +131,7 @@ SFP_PORT_END = 132
 
 
 SYSLOG_IDENTIFIER = "sfp_event"
-logger = Logger(SYSLOG_IDENTIFIER)
+sonic_logger = logger.Logger(SYSLOG_IDENTIFIER)
 
 class sfp_event:
     ''' Listen to plugin/plugout cable events '''
@@ -186,7 +186,7 @@ class sfp_event:
     def _get_transceiver_status(self):
         if smbus_present == 0:
             sfpstatus_bin = ''
-            logger.log_info("  PMON - smbus ERROR - DEBUG sfp_event   ")
+            sonic_logger.log_info("  PMON - smbus ERROR - DEBUG sfp_event   ")
         sfp_status = 0
         x = 0
         for index in range(self.SFP_PORT_START, self.SFP_PORT_END+1):
