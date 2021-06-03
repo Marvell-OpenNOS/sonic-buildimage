@@ -4,18 +4,17 @@ listen to the SDK for the SFP change event and return to chassis.
 '''
 
 from __future__ import print_function
-import os
 import sys
+import os
 import time
-from sonic_daemon_base.daemon_base import Logger
+from sonic_py_common import logger
 
 smbus_present = 1
 
 try:
     import smbus
-except ImportError, e:
+except ImportError as e:
     smbus_present = 0
-
 
 
 profile_32x400G = {
@@ -123,6 +122,7 @@ sfputil_profiles = {
 }
 
 
+
 # system level event/error
 EVENT_ON_ALL_SFP = '-1'
 SYSTEM_NOT_READY = 'system_not_ready'
@@ -141,7 +141,7 @@ SFP_PORT_END = 257
 
 
 SYSLOG_IDENTIFIER = "sfp_event"
-logger = Logger(SYSLOG_IDENTIFIER)
+sonic_logger = logger.Logger(SYSLOG_IDENTIFIER)
 
 class sfp_event:
     ''' Listen to plugin/plugout cable events '''
@@ -151,14 +151,18 @@ class sfp_event:
         
         self.handle = None
         self.port_to_eeprom_mapping = {}
-	self.SFP_PORT_START=SFP_PORT_START
+        self.SFP_PORT_START=SFP_PORT_START
         self.SFP_PORT_END=SFP_PORT_END
         self.PLATFORM_ROOT_PATH=PLATFORM_ROOT_PATH
         self.PLATFORM=PLATFORM
+        eeprom_path="/sys/bus/i2c/devices/0-0050/eeprom"
+        self.PMON_HWSKU_PATH=PMON_HWSKU_PATH
+        self.HOST_CHK_CMD = HOST_CHK_CMD
+        self.HWSKU = HWSKU
 
         eeprom_path="/sys/bus/i2c/devices/0-0050/eeprom"
 
-	x = self.self.SFP_PORT_START
+        x = self.SFP_PORT_START
         while(x<self.SFP_PORT_END+1):
             self.port_to_eeprom_mapping[x] = eeprom_path
             x = x + 1
@@ -190,10 +194,11 @@ class sfp_event:
       
 
     def _get_transceiver_status(self):
-	if smbus_present == 0:
-            logger.log_info("  PMON - smbus ERROR - DEBUG sfp_event   ")
-	sfp_status = 0
-	x = 0
+        if smbus_present == 0:
+            sfpstatus_bin = ''
+            sonic_logger.log_info("  PMON - smbus ERROR - DEBUG sfp_event   ")
+        sfp_status = 0
+        x = 0
         for index in range(self.SFP_PORT_START, self.SFP_PORT_END+1):
                 port_index = index-1
                 profile = sfputil_profiles[self._port_profile]
@@ -204,14 +209,14 @@ class sfp_event:
                         self.i2c_set(device_reg, 0, bin_offset)
                         path = "/sys/bus/i2c/devices/0-0050/eeprom"
                         try:
-                             reg_file = open(path, 'rb')
-                             reg_file.seek(1)
-                             reg_file.read(2)
-			     sfp_status=( x | (1<<index-self.SFP_PORT_START)) + sfp_status
+                                reg_file = open(path, 'rb')
+                                reg_file.seek(1)
+                                reg_file.read(2)
+                                sfp_status=( x | (1<<index-self.SFP_PORT_START)) + sfp_status
                         except IOError as e:
-			     sfp_status=( x & ~(1<<index-self.SFP_PORT_START)) + sfp_status
+                                sfp_status=( x & ~(1<<index-self.SFP_PORT_START)) + sfp_status
 
-	sfp_status = ~sfp_status
+        sfp_status = ~sfp_status
         return sfp_status
 
     def __get_path_to_sai_file(self):
@@ -227,7 +232,7 @@ class sfp_event:
         """
     
         start_time = time.time()
-        port = SFP_PORT_START
+        port = self.SFP_PORT_START
         forever = False
 
         if timeout == 0:
@@ -246,19 +251,19 @@ class sfp_event:
             reg_value = self._get_transceiver_status()
             if (reg_value != self.modprs_register):
                 changed_ports = (self.modprs_register ^ reg_value)
-                while (port >= SFP_PORT_START and port <= SFP_PORT_END):
-		    profile = sfputil_profiles[self._port_profile]
+                while (port >= self.SFP_PORT_START and port <=self.SFP_PORT_END):
+                    profile = sfputil_profiles[self._port_profile]
                     port_index = port - 1 
                     if  port_index in profile:
-                    	# Mask off the bit corresponding to our port
-                    	mask = (1 << port-SFP_PORT_START)
-                    	if (changed_ports & mask):
-                        	# ModPrsL is active high
-                        	if reg_value & mask == 0:
-                            	      port_change[port] = '1'
-                        	else:
-                            	      port_change[port] = '0'
-                    	port += 1
+                        # Mask off the bit corresponding to our port
+                        mask = (1 << port-SFP_PORT_START)
+                        if (changed_ports & mask):
+                                # ModPrsL is active high
+                                if reg_value & mask == 0:
+                                     port_change[port] = '1'
+                                else:
+                                     port_change[port] = '0'
+                    port += 1
                 # Update reg value
                 self.modprs_register = reg_value
                 return True, port_change
