@@ -41,13 +41,15 @@ interface ignore wildcard
 # if the source interface is configured but no ip on that interface, then listen on another
 # interface based on existing logic
 {%- macro check_ip_on_interface(interface_name, table_name) %}
+    {%- set ns = namespace(valid_intf = 'false') %}
     {%- if table_name %}
         {%- for (name, source_prefix) in table_name|pfx_filter %}
             {%- if source_prefix and name == interface_name %}
-true
+                {%- set ns.valid_intf = 'true' %}
             {%- endif %}
         {%- endfor %}
     {%- endif %}
+{{ ns.valid_intf }}
 {%- endmacro %}
 
 {% set ns = namespace(source_intf = "") %}

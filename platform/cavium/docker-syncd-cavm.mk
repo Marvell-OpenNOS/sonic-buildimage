@@ -16,8 +16,10 @@ ifneq ($(ENABLE_SYNCD_RPC),y)
 SONIC_INSTALL_DOCKER_IMAGES += $(DOCKER_SYNCD_CAVM)
 endif
 
+$(DOCKER_SYNCD_BASE)_VERSION = 1.0.0
+$(DOCKER_SYNCD_BASE)_PACKAGE_NAME = syncd
+
 $(DOCKER_SYNCD_CAVM)_CONTAINER_NAME = syncd
 $(DOCKER_SYNCD_CAVM)_RUN_OPT += --net=host --privileged -t
 $(DOCKER_SYNCD_CAVM)_RUN_OPT += -v /host/machine.conf:/etc/machine.conf
 $(DOCKER_SYNCD_CAVM)_RUN_OPT += -v /etc/sonic:/etc/sonic:ro
-$(DOCKER_SYNCD_CAVM)_BASE_IMAGE_FILES += monit_syncd:/etc/monit/conf.d

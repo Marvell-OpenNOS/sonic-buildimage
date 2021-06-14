@@ -474,16 +474,15 @@ fi
 
 ## Version file
 sudo mkdir -p $FILESYSTEM_ROOT/etc/sonic
-sudo tee $FILESYSTEM_ROOT/etc/sonic/sonic_version.yml > /dev/null <<EOF
-build_version: '${SONIC_IMAGE_VERSION}'
-debian_version: '$(cat $FILESYSTEM_ROOT/etc/debian_version)'
-kernel_version: '$kversion'
-asic_type: $sonic_asic_platform
-commit_id: '$(git rev-parse --short HEAD)'
-build_date: $(date -u)
-build_number: ${BUILD_NUMBER:-0}
-built_by: $USER@$BUILD_HOSTNAME
-EOF
+export build_version="${SONIC_IMAGE_VERSION}"
+export debian_version="$(cat $FILESYSTEM_ROOT/etc/debian_version)"
+export kernel_version="${kversion}"
+export asic_type="${sonic_asic_platform}"
+export commit_id="$(git rev-parse --short HEAD)"
+export build_date="$(date -u)"
+export build_number="${BUILD_NUMBER:-0}"
+export built_by="$USER@$BUILD_HOSTNAME"
+j2 files/build_templates/sonic_version.yml.j2 | sudo tee $FILESYSTEM_ROOT/etc/sonic/sonic_version.yml
 
 ## Copy over clean-up script
 sudo cp ./files/scripts/core_cleanup.py $FILESYSTEM_ROOT/usr/bin/core_cleanup.py
@@ -578,20 +577,22 @@ sudo rm -f $ONIE_INSTALLER_PAYLOAD $FILESYSTEM_SQUASHFS
 ## Note: -x to skip directories on different file systems, such as /proc
 sudo du -hsx $FILESYSTEM_ROOT
 sudo mkdir -p $FILESYSTEM_ROOT/var/lib/docker
-sudo mksquashfs $FILESYSTEM_ROOT $FILESYSTEM_SQUASHFS -e boot -e var/lib/docker -e $PLATFORM_DIR
-
 scripts/collect_host_image_version_files.sh $TARGET_PATH $FILESYSTEM_ROOT
-
-if [ $MULTIARCH_QEMU_ENVIRON == y ]; then
-    # Remove qemu arm bin executable used for cross-building
-    sudo rm -f $FILESYSTEM_ROOT/usr/bin/qemu*static || true
-    DOCKERFS_PATH=../dockerfs/
-fi
+sudo mksquashfs $FILESYSTEM_ROOT $FILESYSTEM_SQUASHFS -e boot -e var/lib/docker -e $PLATFORM_DIR
 
 # Ensure admin gid is 1000
 gid_user=$(sudo LANG=C chroot $FILESYSTEM_ROOT id -g $USERNAME) || gid_user="none"
 if [ "${gid_user}" != "1000" ]; then
     die "expect gid 1000. current:${gid_user}"
+fi
+
+# ALERT: This bit of logic tears down the qemu based build environment used to
+# perform builds for the ARM architecture. This must be the last step in this
+# script before creating the Sonic installer payload zip file.
+if [ $MULTIARCH_QEMU_ENVIRON == y ]; then
+    # Remove qemu arm bin executable used for cross-building
+    sudo rm -f $FILESYSTEM_ROOT/usr/bin/qemu*static || true
+    DOCKERFS_PATH=../dockerfs/
 fi
 
 ## Compress docker files

@@ -3,8 +3,8 @@
 try:
     import sys
     from sonic_platform_base.chassis_base import ChassisBase
-    from sonic_platform.sfp import Sfp
-    from sonic_platform.psu import Psu
+    from sonic_platform.sfp import Sfp, sfp_list_get
+    from sonic_platform.psu import psu_list_get
     from sonic_platform.fan_drawer import fan_drawer_list_get
     from sonic_platform.thermal import thermal_list_get
     from eeprom import Eeprom
@@ -18,18 +18,21 @@ class Chassis(ChassisBase):
     def __init__(self):
         ChassisBase.__init__(self)
 
-        self._eeprom = Eeprom()
-
-        for index in range(Sfp.port_start(), Sfp.port_end() + 1):
-            sfp_node = Sfp(index)
-            self._sfp_list.append(sfp_node)
-
-        for i in range(1, Psu.get_num_psus() + 1):
-            psu = Psu(i)
-            self._psu_list.append(psu)
-
+        self.__eeprom = None
         self.__fan_drawers = None
         self.__thermals = None
+        self.__psu_list = None
+        self.__sfp_list = None
+
+    @property
+    def _eeprom(self):
+        if self.__eeprom is None:
+            self.__eeprom = Eeprom()
+        return self.__eeprom
+
+    @_eeprom.setter
+    def _eeprom(self, value):
+        pass
 
     @property
     def _fan_drawer_list(self):
@@ -49,6 +52,26 @@ class Chassis(ChassisBase):
 
     @_thermal_list.setter
     def _thermal_list(self, value):
+        pass
+
+    @property
+    def _psu_list(self):
+        if self.__psu_list is None:
+            self.__psu_list = psu_list_get()
+        return self.__psu_list
+
+    @_psu_list.setter
+    def _psu_list(self, value):
+        pass
+
+    @property
+    def _sfp_list(self):
+        if self.__sfp_list is None:
+            self.__sfp_list = sfp_list_get()
+        return self.__sfp_list
+
+    @_sfp_list.setter
+    def _sfp_list(self, value):
         pass
 
     def get_name(self):
@@ -138,3 +161,16 @@ class Chassis(ChassisBase):
     def get_change_event(self, timeout=0):
         ready, event_sfp = Sfp.get_transceiver_change_event(timeout)
         return ready, { 'sfp': event_sfp } if ready else {}
+
+    def get_reboot_cause(self):
+        """
+        Retrieves the cause of the previous reboot
+
+        Returns:
+            A tuple (string, string) where the first element is a string
+            containing the cause of the previous reboot. This string must be
+            one of the predefined strings in this class. If the first string
+            is "REBOOT_CAUSE_HARDWARE_OTHER", the second string can be used
+            to pass a description of the reboot cause.
+        """
+        return self.REBOOT_CAUSE_NON_HARDWARE, ''

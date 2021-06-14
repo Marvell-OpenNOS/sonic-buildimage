@@ -63,6 +63,7 @@ module sonic-types {
             enum DROP;
             enum FORWARD;
             enum REDIRECT;
+            enum DO_NOT_NAT;
         }
     }
 
@@ -112,6 +113,50 @@ module sonic-types {
         type string {
             length 1..64;
             pattern "percentage|used|free|PERCENTAGE|USED|FREE";
+        }
+    }
+
+    typedef admin_mode {
+        type enumeration {
+            enum enabled;
+            enum disabled;
+        }
+    }
+
+    typedef ip-protocol-type {
+        type enumeration {
+            enum TCP;
+            enum UDP;
+        }
+    }
+    
+    typedef interface_type {
+        type enumeration {
+            enum CR;
+            enum CR2;
+            enum CR4;
+            enum SR;
+            enum SR2;
+            enum SR4;
+            enum LR;
+            enum LR4;
+            enum KR;
+            enum KR4;
+            enum CAUI;
+            enum GMII;
+            enum SFI;
+            enum XLAUI;
+            enum KR2;
+            enum CAUI4;
+            enum XAUI;
+            enum XFI;
+            enum XGMII;
+        }
+    }
+
+    typedef tpid_type {
+        type string {
+            pattern "0x8100|0x9100|0x9200|0x88a8|0x88A8";
         }
     }
 }

@@ -39,8 +39,8 @@ RUN pip install cffi==1.10.0 \
                 gitpython \
                 ipaddr \
                 ipython==5.4.1 \
-                ixnetwork-restpy==1.0.52 \
-                ixnetwork-open-traffic-generator==0.0.70 \
+                ixnetwork-restpy==1.0.64 \
+                ixnetwork-open-traffic-generator==0.0.79 \
                 snappi[ixnetwork]==0.3.13 \
                 jinja2==2.7.2 \
                 jsonpatch \
@@ -171,8 +171,12 @@ RUN python -m virtualenv --system-site-packages env-201811
 RUN env-201811/bin/pip install cryptography==3.3.2 ansible==2.0.0.2
 
 RUN python3 -m venv env-python3
-RUN env-python3/bin/pip3 install cryptography==3.3.2 azure-kusto-data azure-kusto-ingest defusedxml pytest
+RUN env-python3/bin/pip3 install cryptography==3.3.2 azure-kusto-data azure-kusto-ingest defusedxml pytest aiohttp
 
 # NOTE: There is an ordering dependency for pycryptodome. Leaving this at
 #       the end until we figure that out.
 RUN pip install pycryptodome==3.9.8
+
+# Install allure-pytest library
+RUN pip install --upgrade setuptools \
+    && pip install allure-pytest==2.8.22

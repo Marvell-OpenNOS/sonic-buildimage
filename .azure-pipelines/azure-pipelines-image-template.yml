@@ -38,14 +38,18 @@ jobs:
         submodules: recursive
         displayName: 'Checkout code'
       - script: |
-          git checkout -b $(Build.SourceBranchName)
+          BRANCH_NAME=$(Build.SourceBranchName)
+          [ -n "$SYSTEM_PULLREQUEST_PULLREQUESTID" ] && BRANCH_NAME="$SYSTEM_PULLREQUEST_TARGETBRANCH-$SYSTEM_PULLREQUEST_PULLREQUESTNUMBER"
+          git checkout -b $BRANCH_NAME
           sudo modprobe overlay
           sudo apt-get install -y acl
           sudo bash -c "echo 1 > /proc/sys/vm/compact_memory"
           ENABLE_DOCKER_BASE_PULL=y make PLATFORM=$(PLATFORM_AZP) PLATFORM_ARCH=$(PLATFORM_ARCH) configure
         displayName: 'Make configure'
     postSteps:
-      - publish: $(System.DefaultWorkingDirectory)/target
+      - script: cp target -r $(Build.ArtifactStagingDirectory)/
+        displayName: Copy Artifacts
+      - publish:  $(Build.ArtifactStagingDirectory)
         artifact: 'sonic-buildimage.$(GROUP_NAME)$(GROUP_EXTNAME)'
         displayName: "Archive sonic image"
       - ${{ parameters.postSteps }}
