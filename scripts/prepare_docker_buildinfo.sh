@@ -11,9 +11,19 @@ DISTRO=$5
 DOCKERFILE_PATH=$(dirname "$DOCKERFILE_TARGE")
 BUILDINFO_PATH="${DOCKERFILE_PATH}/buildinfo"
 BUILDINFO_VERSION_PATH="${BUILDINFO_PATH}/versions"
+if [[ $CROSS_BUILD_ENVIRON == y ]]; then
+    PREBUILT_PYTHON_WHEELS_PATH="${DOCKERFILE_PATH}/prebuilt-python-wheels"
+fi
 
 [ -d $BUILDINFO_PATH ] && rm -rf $BUILDINFO_PATH
 mkdir -p $BUILDINFO_VERSION_PATH
+
+if [[ $CROSS_BUILD_ENVIRON == y ]]; then
+    # Copy pre-compiled (cross-compiled) python wheels used in dockers
+    [ -d $PREBUILT_PYTHON_WHEELS_PATH ] && rm -rf $PREBUILT_PYTHON_WHEELS_PATH
+    mkdir -p $PREBUILT_PYTHON_WHEELS_PATH
+    cp -rf /PRE_BUILT_TARGET/* $PREBUILT_PYTHON_WHEELS_PATH
+fi
 
 # Get the debian distribution from the docker base image
 if [ -z "$DISTRO" ]; then

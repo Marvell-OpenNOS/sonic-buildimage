@@ -3,7 +3,11 @@
 include /usr/share/dpkg/pkg-info.mk
 
 PACKAGE_PRE_NAME := mrvlprestera
+ifeq ($(CROSS_BUILD_ENVIRON), y)
+KVERSION    ?= $(KVERSION)
+else
 KVERSION   ?= $(shell uname -r)
+endif
 KERNEL_SRC :=  /lib/modules/$(KVERSION)
 MOD_SRC_DIR:= $(shell pwd)
 MODULE_DIR := mrvl-prestera/cpssEnabler/linuxNoKernelModule/drivers
