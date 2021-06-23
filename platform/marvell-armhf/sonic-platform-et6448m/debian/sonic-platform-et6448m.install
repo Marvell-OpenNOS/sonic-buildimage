@@ -1,0 +1,6 @@
+et6448m_plt_setup.sh usr/sbin
+et6448m/scripts/et6448m-init.sh  usr/local/bin
+et6448m/service/et6448m-init.service  etc/systemd/system
+et6448m/sonic_platform-1.0-py3-none-any.whl usr/share/sonic/device/armhf-marvell_et6448m_52x-r0
+entropy.py etc/
+inband_mgmt.sh etc/

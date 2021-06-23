@@ -3,23 +3,62 @@
 # output every command that modifies files on the build system.
 #export DH_VERBOSE = 1
 
+include /usr/share/dpkg/pkg-info.mk
+#--------------------------------------------------------
 
-# see FEATURE AREAS in dpkg-buildflags(1)
-#export DEB_BUILD_MAINT_OPTIONS = hardening=+all
-
-# see ENVIRONMENT in dpkg-buildflags(1)
-# package maintainers to append CFLAGS
-#export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
-# package maintainers to append LDFLAGS
-#export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
-
+PACKAGE_PRE_NAME := sonic-platform
+MOD_SRC_DIR:= $(shell pwd)
+MODULE_DIRS:= et6448m
+UTILS_DIR := utils
+SERVICE_DIR := service
+PLATFORM_DIR := sonic_platform
 
 %:
-	dh $@ 
+	dh $@ --with systemd,python3 --buildsystem=pybuild
 
+clean:
+	dh_testdir
+	dh_testroot
+	dh_clean
 
-# dh_make generated override targets
-# This is example for Cmake (See https://bugs.debian.org/641051 )
-#override_dh_auto_configure:
-#	dh_auto_configure -- #	-DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)
+build:
+	(for mod in $(MODULE_DIRS); do \
+		python3 $${mod}/setup.py bdist_wheel -d $(MOD_SRC_DIR)/$${mod}; \
+	done)
 
+binary: binary-arch binary-indep
+	# Nothing to do
+
+binary-arch:
+	# Nothing to do
+
+binary-indep:
+	dh_testdir
+	dh_installdirs
+
+	# Custom package commands
+	(for mod in $(MODULE_DIRS); do \
+		dh_installdirs -p$(PACKAGE_PRE_NAME)-$${mod} /usr/local/bin; \
+		cp $(MOD_SRC_DIR)/$${mod}/$(SERVICE_DIR)/*.service debian/$(PACKAGE_PRE_NAME)-$${mod}/lib/systemd/system/; \
+		cp $(MOD_SRC_DIR)/$${mod}/$(UTILS_DIR)/* debian/$(PACKAGE_PRE_NAME)-$${mod}/usr/local/bin/; \
+		python3 $${mod}/setup.py install --root=$(MOD_SRC_DIR)/debian/$(PACKAGE_PRE_NAME)-$${mod} --install-layout=deb; \
+	done)
+
+	# Resuming debhelper scripts
+	dh_testroot
+	dh_install
+	dh_installchangelogs
+	dh_installdocs
+	dh_systemd_enable
+	dh_installinit
+	dh_systemd_start
+	dh_link
+	dh_fixperms
+	dh_compress
+	dh_strip
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+.PHONY: build binary binary-arch binary-indep clean
