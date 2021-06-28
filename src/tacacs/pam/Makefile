@@ -21,7 +21,11 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	git apply ../0005-pam-Modify-parsing-of-IP-address-and-port-number-to-.patch
 	git apply ../0006-Add-support-for-source-ip-address.patch
 
+ifeq ($(CROSS_BUILD_ENVIRON), y)
+	CONFIG_SITE=/etc/dpkg-cross/cross-config.$(CONFIGURED_ARCH) LD_LIBRARY_PATH=$(CROSS_LIB_PATH) dpkg-buildpackage -rfakeroot -b -us -uc -a$(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
+else
 	dpkg-buildpackage -rfakeroot -b -us -uc -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
+endif
 	popd
 
 	mv $(DERIVED_TARGETS) $* $(DEST)/

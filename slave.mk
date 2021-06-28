@@ -62,6 +62,7 @@ export PYTHON_WHEELS_PATH
 export IMAGE_DISTRO
 export IMAGE_DISTRO_DEBS_PATH
 export MULTIARCH_QEMU_ENVIRON
+export CROSS_BUILD_ENVIRON
 
 ###############################################################################
 ## Utility rules
@@ -201,6 +202,38 @@ endif
 MAKEFLAGS += -j $(SONIC_BUILD_JOBS)
 export SONIC_CONFIG_MAKE_JOBS
 
+ifeq ($(CROSS_BUILD_ENVIRON),y)
+DEB_BUILD_OPTIONS_GENERIC += nocheck
+export $(dpkg-architecture -a$(CONFIGURED_ARCH))
+ANT_DEB_CROSS_OPT := -a$(CONFIGURED_ARCH) -Pcross,nocheck 
+ANT_DEB_CONFIG := CONFIG_SITE=/etc/dpkg-cross/cross-config.$(CONFIGURED_ARCH)
+
+VIRTENV_BASE_CROSS_PYTHON2 = /python_virtualenv/env2/
+VIRTENV_BASE_CROSS_PYTHON3 = /python_virtualenv/env3/
+VIRTENV_BIN_CROSS_PYTHON2 = $(VIRTENV_BASE_CROSS_PYTHON2)/bin/
+VIRTENV_BIN_CROSS_PYTHON3 = $(VIRTENV_BASE_CROSS_PYTHON3)/bin/
+
+ifeq ($(CONFIGURED_ARCH),armhf)
+CROSS_HOST_TYPE = arm-linux-gnueabihf
+GOARCH=arm
+else ifeq ($(CONFIGURED_ARCH),arm64)
+CROSS_HOST_TYPE = aarch64-linux-gnueabi
+GOARCH=arm64
+endif
+
+CROSS_COMPILE = $(CROSS_HOST_TYPE)-
+CROSS_CC = $(CROSS_COMPILE)gcc
+CROSS_CXX = $(CROSS_COMPILE)g++
+CROSS_AR = $(CROSS_COMPILE)ar
+CROSS_LIB_PATH = /usr/$(CROSS_HOST_TYPE)/lib/
+CROSS_BIN_PATH = /usr/$(CROSS_HOST_TYPE)/bin/
+CROSS_PKGS_LIB_PATH = /usr/lib/$(CROSS_HOST_TYPE)
+
+CROSS_PERL_CORE_PATH = $(CROSS_PKGS_LIB_PATH)/perl/5.28.1/CORE/
+
+CROSS_COMPILE_FLAGS := CGO_ENABLED=1 GOOS=linux GOARCH=$(GOARCH) CROSS_COMPILE=$(CROSS_COMPILE) OVERRIDE_HOST_TYPE=$(CROSS_HOST_TYPE) CROSS_CC=$(CROSS_CC) CROSS_CXX=$(CROSS_CXX) CROSS_LIB_PATH=$(CROSS_LIB_PATH) CROSS_BIN_PATH=$(CROSS_BIN_PATH) CROSS_HOST_TYPE=$(CROSS_HOST_TYPE) CROSS_PKGS_LIB_PATH=$(CROSS_PKGS_LIB_PATH) CROSS_PERL_CORE_PATH=$(CROSS_PERL_CORE_PATH)
+endif
+
 ###############################################################################
 ## Routing stack related exports
 ###############################################################################
@@ -261,6 +294,7 @@ $(info "INCLUDE_MACSEC"                  : "$(INCLUDE_MACSEC)")
 $(info "TELEMETRY_WRITABLE"              : "$(TELEMETRY_WRITABLE)")
 $(info "PDDF_SUPPORT"                    : "$(PDDF_SUPPORT)")
 $(info "MULTIARCH_QEMU_ENVIRON"          : "$(MULTIARCH_QEMU_ENVIRON)")
+$(info "CROSS_BUILD_ENVIRON"             : "$(CROSS_BUILD_ENVIRON)")
 $(info )
 else
 $(info SONiC Build System for $(CONFIGURED_PLATFORM):$(CONFIGURED_ARCH))
@@ -429,7 +463,7 @@ $(addprefix $(DEBS_PATH)/, $(SONIC_MAKE_DEBS)) : $(DEBS_PATH)/% : .platform $$(a
 		if [ -f $($*_SRC_PATH).patch/series ]; then pushd $($*_SRC_PATH) && QUILT_PATCHES=../$(notdir $($*_SRC_PATH)).patch quilt push -a; popd; fi
 		# Build project and take package
 		$(SETUP_OVERLAYFS_FOR_DPKG_ADMINDIR)
-		DEB_BUILD_OPTIONS="${DEB_BUILD_OPTIONS_GENERIC}" make -j$(SONIC_CONFIG_MAKE_JOBS) DEST=$(shell pwd)/$(DEBS_PATH) -C $($*_SRC_PATH) $(shell pwd)/$(DEBS_PATH)/$* $(LOG)
+		DEB_BUILD_OPTIONS="${DEB_BUILD_OPTIONS_GENERIC}" $(CROSS_COMPILE_FLAGS) make -j$(SONIC_CONFIG_MAKE_JOBS) DEST=$(shell pwd)/$(DEBS_PATH) -C $($*_SRC_PATH) $(shell pwd)/$(DEBS_PATH)/$* $(LOG)
 		# Clean up
 		if [ -f $($*_SRC_PATH).patch/series ]; then pushd $($*_SRC_PATH) && quilt pop -a -f; [ -d .pc ] && rm -rf .pc; popd; fi
 
@@ -471,9 +505,16 @@ $(addprefix $(DEBS_PATH)/, $(SONIC_DPKG_DEBS)) : $(DEBS_PATH)/% : .platform $$(a
 		if [ -f ./autogen.sh ]; then ./autogen.sh $(LOG); fi
 		$(SETUP_OVERLAYFS_FOR_DPKG_ADMINDIR)
 		$(if $($*_DPKG_TARGET),
+ifneq ($(CROSS_BUILD_ENVIRON),y)
 			${$*_BUILD_ENV} DEB_BUILD_OPTIONS="${DEB_BUILD_OPTIONS_GENERIC} ${$*_DEB_BUILD_OPTIONS}" dpkg-buildpackage -rfakeroot -b -us -uc -j$(SONIC_CONFIG_MAKE_JOBS) --as-root -T$($*_DPKG_TARGET) --admindir $$mergedir $(LOG),
 			${$*_BUILD_ENV} DEB_BUILD_OPTIONS="${DEB_BUILD_OPTIONS_GENERIC} ${$*_DEB_BUILD_OPTIONS}" dpkg-buildpackage -rfakeroot -b -us -uc -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $$mergedir $(LOG)
 		)
+else
+			export $(dpkg-architecture -a$(CONFIGURED_ARCH)) && \
+			${$*_BUILD_ENV} DEB_BUILD_OPTIONS="${DEB_BUILD_OPTIONS_GENERIC} ${$*_DEB_BUILD_OPTIONS}" $(ANT_DEB_CONFIG) $(CROSS_COMPILE_FLAGS) dpkg-buildpackage -rfakeroot -b $(ANT_DEB_CROSS_OPT) -us -uc -j$(SONIC_CONFIG_MAKE_JOBS) --as-root -T$($*_DPKG_TARGET) --admindir $$mergedir $(LOG),
+			export $(dpkg-architecture -a$(CONFIGURED_ARCH)) && \
+			${$*_BUILD_ENV} DEB_BUILD_OPTIONS="${DEB_BUILD_OPTIONS_GENERIC} ${$*_DEB_BUILD_OPTIONS}" $(ANT_DEB_CONFIG) $(CROSS_COMPILE_FLAGS) dpkg-buildpackage -rfakeroot -b $(ANT_DEB_CROSS_OPT) -us -uc -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $$mergedir $(LOG))
+endif
 		popd $(LOG_SIMPLE)
 		# Clean up
 		if [ -f $($*_SRC_PATH).patch/series ]; then pushd $($*_SRC_PATH) && quilt pop -a -f; [ -d .pc ] && rm -rf .pc; popd; fi
@@ -539,7 +580,12 @@ $(SONIC_INSTALL_DEBS) : $(DEBS_PATH)/%-install : .platform $$(addsuffix -install
 			{ while dpkg -s $(firstword $(subst _, ,$(basename $(deb)))) | grep "^Version: $(word 2, $(subst _, ,$(basename $(deb))))" &> /dev/null; do echo "waiting for $(deb) to be uninstalled" $(LOG); sleep 1; done } )
 		# put a lock here because dpkg does not allow installing packages in parallel
 		if mkdir $(DEBS_PATH)/dpkg_lock &> /dev/null; then
+ifneq ($(CROSS_BUILD_ENVIRON),y)
 			{ sudo DEBIAN_FRONTEND=noninteractive dpkg -i $(DEBS_PATH)/$* $(LOG) && rm -d $(DEBS_PATH)/dpkg_lock && break; } || { rm -d $(DEBS_PATH)/dpkg_lock && exit 1 ; }
+else
+			# Relocate debian packages python libraries to the cross python virtual env location
+			{ sudo DEBIAN_FRONTEND=noninteractive dpkg -i $(if $(findstring $(LINUX_HEADERS),$*),--force-depends) $(DEBS_PATH)/$* $(LOG) && rm -rf tmp && mkdir tmp && dpkg -x $(DEBS_PATH)/$* tmp && (sudo cp -rf tmp/usr/lib/python2.7/dist-packages/* /python_virtualenv/env2/lib/python2.7/site-packages/ 2>/dev/null || true) && (sudo cp -rf tmp/usr/lib/python3/dist-packages/* /python_virtualenv/env3/lib/python3.7/site-packages/ 2>/dev/null || true) && rm -d $(DEBS_PATH)/dpkg_lock && break; } || { rm -d $(DEBS_PATH)/dpkg_lock && exit 1 ; }
+endif
 		fi
 	done
 	$(FOOTER)
@@ -611,7 +657,12 @@ $(addprefix $(PYTHON_WHEELS_PATH)/, $(SONIC_PYTHON_WHEELS)) : $(PYTHON_WHEELS_PA
 		pushd $($*_SRC_PATH) $(LOG_SIMPLE)
 		# apply series of patches if exist
 		if [ -f ../$(notdir $($*_SRC_PATH)).patch/series ]; then QUILT_PATCHES=../$(notdir $($*_SRC_PATH)).patch quilt push -a; fi
-		if [ ! "$($*_TEST)" = "n" ]; then python$($*_PYTHON_VERSION) setup.py test $(LOG); fi
+		if [ ! "$($*_TEST)" = "n" ]; then
+ifneq ($(CROSS_BUILD_ENVIRON),y)
+		  python$($*_PYTHON_VERSION) setup.py test $(LOG); fi
+else
+		  PATH=$(VIRTENV_BIN_CROSS_PYTHON$($*_PYTHON_VERSION)):${PATH} python$($*_PYTHON_VERSION) setup.py test $(LOG); fi
+endif
 		python$($*_PYTHON_VERSION) setup.py bdist_wheel $(LOG)
 		# clean up
 		if [ -f ../$(notdir $($*_SRC_PATH)).patch/series ]; then quilt pop -a -f; [ -d .pc ] && rm -rf .pc; fi
@@ -638,7 +689,12 @@ $(SONIC_INSTALL_WHEELS) : $(PYTHON_WHEELS_PATH)/%-install : .platform $$(addsuff
 	# put a lock here to avoid race conditions
 	while true; do
 	if mkdir $(PYTHON_WHEELS_PATH)/pip_lock &> /dev/null; then
+ifneq ($(CROSS_BUILD_ENVIRON),y)
 	{ sudo -E pip$($*_PYTHON_VERSION) install $(PYTHON_WHEELS_PATH)/$* $(LOG) && rm -d $(PYTHON_WHEELS_PATH)/pip_lock && break; } || { rm -d $(PYTHON_WHEELS_PATH)/pip_lock && exit 1 ; }
+else
+	# Link python script and data expected location to the cross python virtual env istallation locations
+	{ PATH=$(VIRTENV_BIN_CROSS_PYTHON$($*_PYTHON_VERSION)):${PATH} sudo -E $(VIRTENV_BIN_CROSS_PYTHON$($*_PYTHON_VERSION))/pip$($*_PYTHON_VERSION) install --no-deps $(PYTHON_WHEELS_PATH)/$* $(LOG) && $(if $(findstring $(SONIC_CONFIG_ENGINE_PY3),$*),(sudo ln -s $(VIRTENV_BIN_CROSS_PYTHON$($*_PYTHON_VERSION))/sonic-cfggen /usr/local/bin/sonic-cfggen 2>/dev/null || true), true ) && $(if $(findstring $(SONIC_YANG_MODELS_PY3),$*),(sudo ln -s $(VIRTENV_BASE_CROSS_PYTHON3)/yang-models /usr/local/yang-models 2>/dev/null || true), true ) && rm -d $(PYTHON_WHEELS_PATH)/pip_lock && break; } || { rm -d $(PYTHON_WHEELS_PATH)/pip_lock && exit 1 ; }
+endif
 	fi
 	done
 	$(FOOTER)
@@ -1037,7 +1093,7 @@ $(addprefix $(TARGET_PATH)/, $(SONIC_INSTALLERS)) : $(TARGET_PATH)/% : \
 	SONIC_ENFORCE_VERSIONS=$(SONIC_ENFORCE_VERSIONS) \
 	TRUSTED_GPG_URLS=$(TRUSTED_GPG_URLS) \
 	PACKAGE_URL_PREFIX=$(PACKAGE_URL_PREFIX) \
-	MULTIARCH_QEMU_ENVIRON=$(MULTIARCH_QEMU_ENVIRON) \
+	MULTIARCH_QEMU_ENVIRON=$(MULTIARCH_QEMU_ENVIRON) CROSS_BUILD_ENVIRON=$(CROSS_BUILD_ENVIRON) \
 		./build_debian.sh $(LOG)
 
 	USERNAME="$(USERNAME)" \

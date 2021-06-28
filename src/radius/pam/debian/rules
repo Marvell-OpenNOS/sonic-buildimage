@@ -4,7 +4,12 @@
 export DH_VERBOSE=1
 
 # Build options.
+ifeq ($(CROSS_BUILD_ENVIRON), y)
+CC=$(CROSS_CC)
+else
 CC=gcc
+endif
+
 CFLAGS= -g -Wall -fPIC -DCONF_FILE=\"/etc/pam_radius_auth.conf\"
 #LDFLAGS=
 #CFLAGS= -g -Wall -fPIC

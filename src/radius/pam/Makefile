@@ -16,7 +16,11 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	patch -p1 < ../patches/freeradius_configure.patch
 	patch -p1 < ../patches/freeradius_2007-04-06.patch
 	patch -p1 < ../patches/freeradius_libeap_deprecated_openssl_1_0.patch
+ifeq ($(CROSS_BUILD_ENVIRON), y)
+	./configure --disable-static --enable-libtool-lock --libdir=$(CROSS_PKGS_LIB_PATH) --libexecdir=$(CROSS_PKGS_LIB_PATH) --host=$(CROSS_HOST_TYPE) 
+else
 	./configure --disable-static --enable-libtool-lock
+endif
 	make
 	popd
 
@@ -35,7 +39,11 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	git apply patches/0002-peap-mschapv2-support.patch
 	git apply patches/0003-nas-ip-address-config.patch
 
+ifeq ($(CROSS_BUILD_ENVIRON), y)
+	CONFIG_SITE=/etc/dpkg-cross/cross-config.$(CONFIGURED_ARCH) LD_LIBRARY_PATH=$(CROSS_LIB_PATH) dpkg-buildpackage -rfakeroot -b -a$(CONFIGURED_ARCH) -Pcross,nocheck -us -uc -nc
+else
 	dpkg-buildpackage -rfakeroot -b -us -uc -nc
+endif
 	popd
 
 	mv $(DERIVED_TARGETS) $* $(DEST)/

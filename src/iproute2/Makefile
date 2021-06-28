@@ -17,7 +17,12 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	dpkg-source -x iproute2_$(IPROUTE2_VERSION_FULL).dsc
 
 	pushd iproute2-$(IPROUTE2_VERSION)
+ifeq ($(CROSS_BUILD_ENVIRON), y)
+	sed -i 's/#include <string.h>/#include <string.h>\n#include <stdint.h>/' tc/tc_core.c
+	CONFIG_SITE=/etc/dpkg-cross/cross-config.$(CONFIGURED_ARCH) LD_LIBRARY_PATH=$(CROSS_LIB_PATH) dpkg-buildpackage -us -uc -b -a$(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
+else
 	dpkg-buildpackage -us -uc -b -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
+endif
 	popd
 
 	mv $* $(DEST)/

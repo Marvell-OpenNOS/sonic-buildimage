@@ -38,8 +38,20 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	# and go into learning mode.
 	sed -i 's/\/usr\/sbin\/ntpd {/\/usr\/sbin\/ntpd flags=(attach_disconnected complain) {/' debian/apparmor-profile
 
+ifeq ($(CROSS_BUILD_ENVIRON), y)
+	sed -i 's/dh_auto_configure \--/dh_auto_configure -- --with-yielding-select=yes /g' debian/rules 
+	# Remove nfp openssl variables = yes from cross-config.cache
+	sudo awk '!/openssl/{print}' /etc/dpkg-cross/cross-config.cache > ./cross-config.cache
+	sudo cp ./cross-config.cache /etc/dpkg-cross/cross-config.cache
+	rm ./cross-config.cache
+endif
+
 	# Build source and Debian packages with the symbols
+ifeq ($(CROSS_BUILD_ENVIRON), y)
+	CONFIG_SITE=/etc/dpkg-cross/cross-config.$(CONFIGURED_ARCH) LD_LIBRARY_PATH=$(CROSS_LIB_PATH) dpkg-buildpackage -rfakeroot -b -us -uc -a$(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
+else
 	dpkg-buildpackage -rfakeroot -b -us -uc -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
+endif
 
 	popd
 

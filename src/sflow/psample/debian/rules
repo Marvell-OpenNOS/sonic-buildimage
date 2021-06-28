@@ -5,7 +5,11 @@
 	dh $@
 
 override_dh_auto_build:
+ifeq ($(CROSS_BUILD_ENVIRON), y)
+	CC=$(CROSS_CC) cmake . && make CROSS_COMPILE=$(CROSS_COMPILE) CC=$(CROSS_CC) LD_LIBRARY_PATH=$(CROSS_LIB_PATH) 
+else
 	cmake . && make
+endif
 
 override_dh_auto_install:
 

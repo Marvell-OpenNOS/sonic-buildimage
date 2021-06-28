@@ -23,8 +23,21 @@ $(addprefix $(DEST)/, $(MAIN_TARGET)): $(DEST)/% :
 	stg init
 	stg import -s ../patch/series
 
+ifeq ($(CROSS_BUILD_ENVIRON), y)
+	# Copy monit configure settings for arm, add missing settings
+	cp /etc/dpkg-cross/cross-config.cache ./cross-config.cache
+	echo "libmonit_cv_setjmp_available=yes" >> ./cross-config.cache
+	echo "libmonit_cv_vsnprintf_c99_conformant=yes" >> ./cross-config.cache
+	sudo cp ./cross-config.cache /etc/dpkg-cross/cross-config.cache
+	rm ./cross-config.cache
+endif
+
 	# Build source and Debian packages
+ifeq ($(CROSS_BUILD_ENVIRON), y)
+	CONFIG_SITE=/etc/dpkg-cross/cross-config.$(CONFIGURED_ARCH) LD_LIBRARY_PATH=$(CROSS_LIB_PATH) dpkg-buildpackage -rfakeroot -b -us -uc --host-arch $(CONFIGURED_ARCH) -Pcross,nocheck -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
+else
 	dpkg-buildpackage -rfakeroot -b -us -uc -j$(SONIC_CONFIG_MAKE_JOBS) --admindir $(SONIC_DPKG_ADMINDIR)
+endif
 	popd
 
 	# Move the newly-built .deb packages to the destination directory
