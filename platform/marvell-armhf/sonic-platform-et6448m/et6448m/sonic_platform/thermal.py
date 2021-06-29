@@ -54,7 +54,7 @@ class Thermal(ThermalBase):
         # Armada 38x SOC temperature sensor
         else:
             dev_path = self.HWMON_CLASS_DIR
-            sensor_index = 0
+            sensor_index = 1
             sensor_max_suffix = None
             sensor_crit_suffix = None
             hwmon_node = os.listdir(dev_path)[0]

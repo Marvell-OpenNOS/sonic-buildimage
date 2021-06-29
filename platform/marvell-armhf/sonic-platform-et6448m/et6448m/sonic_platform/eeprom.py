@@ -48,7 +48,6 @@ class Eeprom(TlvInfoDecoder):
         else:
             if self.is_psu_eeprom:
                 self.index = psu_index-1
-                print(psu_index)
                 self.start_offset = 18
                 self.eeprom_path = self.I2C_DIR \
                     + "i2c-1/1-005{}/eeprom".format(self.index)
