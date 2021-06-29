@@ -1,0 +1,10 @@
+{
+    "chassis": {
+        "et6448m": {
+            "component": {
+                "U-Boot": { },
+                "System-CPLD": { }
+            }
+        }
+    }
+}

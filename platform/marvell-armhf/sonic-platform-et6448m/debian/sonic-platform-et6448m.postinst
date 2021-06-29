@@ -1,0 +1,11 @@
+#!/bin/sh
+# postinst script for sonic-platform-et6448m
+#
+# see: dh_installdeb(1)
+
+sh /usr/sbin/et6448m_plt_setup.sh
+systemctl enable et6448m-init.service
+systemctl start et6448m-init.service
+
+exit 0
+
