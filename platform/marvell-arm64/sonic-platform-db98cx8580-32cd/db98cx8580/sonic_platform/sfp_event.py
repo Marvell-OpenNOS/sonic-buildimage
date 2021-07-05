@@ -155,7 +155,6 @@ class sfp_event:
         self.SFP_PORT_END=SFP_PORT_END
         self.PLATFORM_ROOT_PATH=PLATFORM_ROOT_PATH
         self.PLATFORM=PLATFORM
-        eeprom_path="/sys/bus/i2c/devices/0-0050/eeprom"
         self.PMON_HWSKU_PATH=PMON_HWSKU_PATH
         self.HOST_CHK_CMD = HOST_CHK_CMD
         self.HWSKU = HWSKU
@@ -195,7 +194,6 @@ class sfp_event:
 
     def _get_transceiver_status(self):
         if smbus_present == 0:
-            sfpstatus_bin = ''
             sonic_logger.log_info("  PMON - smbus ERROR - DEBUG sfp_event   ")
         sfp_status = 0
         x = 0
