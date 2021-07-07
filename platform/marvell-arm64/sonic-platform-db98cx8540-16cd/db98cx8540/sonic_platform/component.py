@@ -7,19 +7,11 @@
 ########################################################################
 
 try:
-    import os
     import sys
     import subprocess
-    import ntpath
     from sonic_platform_base.component_base import ComponentBase
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
-
-smbus_present = 1
-try:
-    import smbus
-except ImportError as e:
-    smbus_present = 0
 
 if sys.version_info[0] < 3:
     import commands as cmd
