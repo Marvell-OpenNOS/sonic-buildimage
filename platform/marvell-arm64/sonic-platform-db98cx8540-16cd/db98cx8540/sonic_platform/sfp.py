@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os
-import sys
 import time
 from ctypes import create_string_buffer
 
@@ -17,10 +16,6 @@ try:
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
-if sys.version_info[0] < 3:
-    import commands as cmd
-else:
-    import subprocess as cmd
 
 smbus_present = 1
 
