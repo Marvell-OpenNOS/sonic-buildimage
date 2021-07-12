@@ -12,7 +12,8 @@ try:
     from sonic_platform_base.sonic_sfp.sff8436 import sff8436Dom
     from sonic_platform_base.sonic_sfp.inf8628 import inf8628InterfaceId
     from sonic_platform_base.sonic_sfp.sfputilhelper import SfpUtilHelper
-    from sonic_daemon_base.daemon_base import Logger
+    from sonic_py_common import logger
+
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
@@ -25,9 +26,10 @@ smbus_present = 1
 
 try:
     import smbus
-except ImportError, e:
+except ImportError as e:
     smbus_present = 0
-  
+
+
 profile_32x400G = {
   0:"0x70,4",   1:"0x70,4",   2:"0x70,4",   3:"0x70,4",   4:"0x70,4",   5:"0x70,4",   6:"0x70,4",   7:"0x70,4",
   8:"0x70,5",   9:"0x70,5",  10:"0x70,5",  11:"0x70,5",  12:"0x70,5",  13:"0x70,5",  14:"0x70,5",  15:"0x70,5",
@@ -262,7 +264,7 @@ SFP_TYPE = "SFP"
 QSFP_TYPE = "QSFP"
 OSFP_TYPE = "OSFP"
 SYSLOG_IDENTIFIER = "xcvrd"
-logger = Logger(SYSLOG_IDENTIFIER)
+sonic_logger = logger.Logger(SYSLOG_IDENTIFIER)
 
 class Sfp(SfpBase):
     PLATFORM_ROOT_PATH = "/usr/share/sonic/device"
@@ -288,6 +290,7 @@ class Sfp(SfpBase):
         cmd = "cat " + sai_profile_path  + " | grep hwId | cut -f2 -d="
         port_profile = os.popen(cmd).read()
         self._port_profile = port_profile.split("\n")[0]
+
 
         self.info_dict_keys = ['type', 'hardware_rev', 'serial', 'manufacturer',
                                'model', 'connector', 'encoding', 'ext_identifier',
@@ -342,10 +345,10 @@ class Sfp(SfpBase):
     
     def i2c_set(self, device_addr, offset, value):
         if smbus_present == 0:
-                cmd = "i2cset -y 0 " + hex(device_addr) + " " + hex(offset) + " " + hex(value)
+                cmd = "i2cset -y 2 " + hex(device_addr) + " " + hex(offset) + " " + hex(value)
                 os.system(cmd)
         else:
-                bus = smbus.SMBus(0)
+                bus = smbus.SMBus(2)
                 bus.write_byte_data(device_addr, offset, value)
 
     def __get_path_to_port_config_file(self):
@@ -375,7 +378,7 @@ class Sfp(SfpBase):
             sysfsfile_eeprom.seek(offset)
             raw = sysfsfile_eeprom.read(num_bytes)
             for n in range(0, num_bytes):
-                eeprom_raw[n] = hex(ord(raw[n]))[2:].zfill(2)
+                eeprom_raw[n] = hex(raw[n])[2:].zfill(2)
         except Exception as e:
             pass
         finally:
@@ -405,7 +408,7 @@ class Sfp(SfpBase):
                     QSFP_VERSION_COMPLIANCE_OFFSET, QSFP_VERSION_COMPLIANCE_WIDTH)
                 qsfp_version_compliance = int(
                     qsfp_version_compliance_raw[0], 16)
-                dom_capability = sfpi_obj.parse_qsfp_dom_capability(
+                dom_capability = sfpi_obj.parse_dom_capability(
                     qsfp_dom_capability_raw, 0)
                 if qsfp_version_compliance >= 0x08:
                     self.dom_temp_supported = dom_capability['data']['Temp_support']['value'] == 'On'
@@ -648,6 +651,7 @@ class Sfp(SfpBase):
             transceiver_info_dict['encoding'] = sfp_interface_bulk_data['data']['EncodingCodes']['value']
             transceiver_info_dict['ext_identifier'] = sfp_interface_bulk_data['data']['Extended Identifier']['value']
             transceiver_info_dict['ext_rateselect_compliance'] = sfp_interface_bulk_data['data']['RateIdentifier']['value']
+            transceiver_info_dict['application_advertisement'] = 'N/A'
             if self.sfp_type == QSFP_TYPE:
                 for key in qsfp_cable_length_tup:
                     if key in sfp_interface_bulk_data['data']:
@@ -1241,7 +1245,7 @@ class Sfp(SfpBase):
         try:
             reg_file = open(port_ps, 'w')
         except IOError as e:
-            print "Error: unable to open file: %s" % str(e)
+            print(e)
             return False
 
         #toggle reset

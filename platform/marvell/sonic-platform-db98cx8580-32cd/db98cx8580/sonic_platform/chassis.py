@@ -10,7 +10,8 @@ try:
     from sonic_platform_base.chassis_base import ChassisBase
     from sonic_platform.sfp import Sfp
     from sonic_platform.eeprom import Eeprom
-    from sonic_daemon_base.daemon_base import Logger
+    from sonic_py_common import logger
+
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
@@ -20,6 +21,9 @@ COPPER_PORT_END = 0
 SFP_PORT_START = 1
 SFP_PORT_END = 257
 PORT_END = 257
+
+
+
 
 
 profile_32x400G = {
@@ -127,9 +131,9 @@ sfputil_profiles = {
 }
 
 
-SYSLOG_IDENTIFIER = "chassis"
-logger = Logger()
 
+SYSLOG_IDENTIFIER = "chassis"
+sonic_logger=logger.Logger(SYSLOG_IDENTIFIER)
 class Chassis(ChassisBase):
     """
     Platform-specific Chassis class
@@ -163,17 +167,16 @@ class Chassis(ChassisBase):
         port_profile = os.popen(cmd).read()
         self._port_profile = port_profile.split("\n")[0]
 
-	if not os.path.exists("/sys/bus/i2c/devices/0-0050") :
-             os.system("echo optoe2 0x50 > /sys/bus/i2c/devices/i2c-0/new_device")
-        eeprom_path = '/sys/bus/i2c/devices/0-0050/eeprom'
+        eeprom_path = '/sys/bus/i2c/devices/2-0050/eeprom'
 
         for index in range(self.SFP_PORT_START, self.SFP_PORT_END+1):
             i2cdev = 0
+            port=index-1
             port_eeprom_path = eeprom_path
             profile = sfputil_profiles[self._port_profile]
             if not os.path.exists(port_eeprom_path):
-	    	logger.log_info(" DEBUG - path %s -- did not exist " % port_eeprom_path )
-            if index in profile:
+                sonic_logger.log_info(" DEBUG - path %s -- did not exist " % port_eeprom_path )
+            if port in profile:
                 sfp_node = Sfp(index, 'QSFP', port_eeprom_path, i2cdev )
                 self._sfp_list.append(sfp_node)
         self.sfp_event_initialized = False
