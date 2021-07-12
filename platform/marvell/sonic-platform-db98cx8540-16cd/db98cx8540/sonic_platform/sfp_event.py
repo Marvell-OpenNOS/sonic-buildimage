@@ -4,7 +4,6 @@ listen to the SDK for the SFP change event and return to chassis.
 '''
 
 from __future__ import print_function
-import sys
 import os
 import time
 from sonic_py_common import logger
@@ -184,7 +183,6 @@ class sfp_event:
 
     def _get_transceiver_status(self):
         if smbus_present == 0:
-            sfpstatus_bin = ''
             sonic_logger.log_info("  PMON - smbus ERROR - DEBUG sfp_event   ")
         sfp_status = 0
         x = 0

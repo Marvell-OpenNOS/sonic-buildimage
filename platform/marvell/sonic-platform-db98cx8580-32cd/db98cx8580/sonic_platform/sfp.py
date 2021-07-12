@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os
-import sys
 import time
 from ctypes import create_string_buffer
 
@@ -17,10 +16,6 @@ try:
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
-if sys.version_info[0] < 3:
-    import commands as cmd
-else:
-    import subprocess as cmd
 
 smbus_present = 1
 
@@ -1062,8 +1057,7 @@ class Sfp(SfpBase):
             if dom_control_raw is not None:
                 dom_control_data = sfpd_obj.parse_control_bytes(
                     dom_control_raw, 0)
-                power_override = (
-                    'On' == dom_control_data['data']['PowerOverride']['value'])
+                return ('On' == dom_control_data['data']['PowerOverride']['value']
         else:
             return False
 
