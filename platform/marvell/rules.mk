@@ -3,6 +3,8 @@ include $(PLATFORM_PATH)/docker-syncd-mrvl.mk
 include $(PLATFORM_PATH)/docker-syncd-mrvl-rpc.mk
 include $(PLATFORM_PATH)/libsaithrift-dev.mk
 include $(PLATFORM_PATH)/one-image.mk
+include $(PLATFORM_PATH)/platform-db98cx8540-16cd.mk
+include $(PLATFORM_PATH)/platform-db98cx8580-32cd.mk
 
 SONIC_ALL += $(SONIC_ONE_IMAGE) \
              $(DOCKER_FPM) \

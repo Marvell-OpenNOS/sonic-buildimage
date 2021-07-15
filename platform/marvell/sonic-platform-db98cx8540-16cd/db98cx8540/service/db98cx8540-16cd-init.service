@@ -1,0 +1,14 @@
+[Unit]
+Description=Platform db98cx8540-16cd Service
+Before=pmon.service
+After=sysinit.target
+DefaultDependencies=no
+
+[Service]
+ExecStart=/usr/local/bin/db98cx8540-16cd-init.sh
+KillSignal=SIGKILL
+SuccessExitStatus=SIGKILL
+#StandardOutput=tty
+
+[Install]
+WantedBy=multi-user.target
