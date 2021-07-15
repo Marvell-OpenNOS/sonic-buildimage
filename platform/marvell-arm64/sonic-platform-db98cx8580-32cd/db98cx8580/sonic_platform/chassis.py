@@ -305,6 +305,24 @@ class Chassis(ChassisBase):
         #
         return (ChassisBase.REBOOT_CAUSE_NON_HARDWARE, None)
 
+    def get_watchdog(self):
+        """
+        Retrieves hardware watchdog device on this chassis
+
+        Returns:
+            An object derived from WatchdogBase representing the hardware
+            watchdog device
+        """
+        try:
+            if self._watchdog is None:
+                from sonic_platform.watchdog import WatchdogImplBase
+                watchdog_device_path = "/dev/watchdog0"
+                self._watchdog = WatchdogImplBase(watchdog_device_path)
+        except Exception as e:
+            sonic_logger.log_warning(" Fail to load watchdog {}".format(repr(e)))
+
+        return self._watchdog
+
     def get_change_event(self, timeout=0):
         """
         Returns a nested dictionary containing all devices which have
