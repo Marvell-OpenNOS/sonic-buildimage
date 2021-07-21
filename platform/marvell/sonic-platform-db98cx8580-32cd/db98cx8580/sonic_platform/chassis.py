@@ -287,6 +287,26 @@ class Chassis(ChassisBase):
         """
         return self._eeprom.system_eeprom_info()
 
+    def get_watchdog(self):
+        """
+        Retrieves hardware watchdog device on this chassis
+
+        Returns:
+            An object derived from WatchdogBase representing the hardware
+            watchdog device
+        """
+        try:
+            if self._watchdog is None:
+                from sonic_platform.watchdog import WatchdogImplBase
+                watchdog_device_path = "/dev/watchdog0"
+                self._watchdog = WatchdogImplBase(watchdog_device_path)
+        except Exception as e:
+            sonic_logger.log_warning(" Fail to load watchdog {}".format(repr(e)))
+
+        return self._watchdog
+
+
+
     def get_reboot_cause(self):
         """
         Retrieves the cause of the previous reboot
