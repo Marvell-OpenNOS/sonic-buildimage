@@ -329,10 +329,10 @@ class Sfp(SfpBase):
     
     def i2c_set(self, device_addr, offset, value):
         if smbus_present == 0:
-                cmd = "i2cset -y 0 " + hex(device_addr) + " " + hex(offset) + " " + hex(value)
+                cmd = "i2cset -y 2 " + hex(device_addr) + " " + hex(offset) + " " + hex(value)
                 os.system(cmd)
         else:
-                bus = smbus.SMBus(0)
+                bus = smbus.SMBus(2)
                 bus.write_byte_data(device_addr, offset, value)
 
     def __get_path_to_port_config_file(self):
