@@ -16,12 +16,9 @@ except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
 MAX_SELECT_DELAY = 3600
-COPPER_PORT_START = 0
-COPPER_PORT_END = 0
 SFP_PORT_START = 1
 SFP_PORT_END = 132
 PORT_END = 132
-
 
 profile_16x400G = {
   0:"0x70,4",   1:"0x70,4",   2:"0x70,4",   3:"0x70,4",   4:"0x70,4",   5:"0x70,4",   6:"0x70,4",   7:"0x70,4",
@@ -133,18 +130,13 @@ class Chassis(ChassisBase):
 
     reset_reason_dict[0x08] = ChassisBase.REBOOT_CAUSE_THERMAL_OVERLOAD_CPU
     reset_reason_dict[0x10] = ChassisBase.REBOOT_CAUSE_WATCHDOG
-    PLATFORM_ROOT_PATH = "/usr/share/sonic/device"
-    PMON_HWSKU_PATH = "/usr/share/sonic/hwsku"
-    HOST_CHK_CMD = "docker > /dev/null 2>&1"
-    PLATFORM = "x86_64-marvell_db98cx8540_16cd-r0"
     HWSKU = "db98cx8540_16cd"
 
 
     def __init__(self):
         ChassisBase.__init__(self)
-        # Port numbers for Initialize SFP list
-        self.COPPER_PORT_START = COPPER_PORT_START
-        self.COPPER_PORT_END = COPPER_PORT_END
+
+        # Port numbers for Initialize SFP
         self.SFP_PORT_START = SFP_PORT_START
         self.SFP_PORT_END = SFP_PORT_END
         self.PORT_END = PORT_END
@@ -171,15 +163,18 @@ class Chassis(ChassisBase):
         # Instantiate ONIE system eeprom object
         self._eeprom = Eeprom()
 
-    def __is_host(self):
-        return os.system(self.HOST_CHK_CMD) == 0
 
     def __get_path_to_sai_profile_file(self):
-        platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
-        hwsku_path = "/".join([platform_path, self.HWSKU]
-                                ) if self.__is_host() else self.PMON_HWSKU_PATH
+        """
+        Retrieve sai.profile path
+        Returns:
+            get_path_to_platform_dir(): get platform path depend on, whether we're running on container or on the host
+            Returns sai.proile path.
+        """
+        from sonic_py_common import device_info
+        platform_path = device_info.get_path_to_platform_dir()
+        hwsku_path = "/".join([platform_path, self.HWSKU])
         return "/".join([hwsku_path, "sai.profile"])
-
 
     def get_sfp(self, index):
         """

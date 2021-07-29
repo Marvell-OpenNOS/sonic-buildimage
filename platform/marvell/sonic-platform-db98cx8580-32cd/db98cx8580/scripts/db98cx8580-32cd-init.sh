@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Platform init script for db98cx8540-16cd 
+# Platform init script for db98cx8580-32cd 
 
 
 # - Main entry

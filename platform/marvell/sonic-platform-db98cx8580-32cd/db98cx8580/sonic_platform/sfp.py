@@ -262,10 +262,6 @@ SYSLOG_IDENTIFIER = "xcvrd"
 sonic_logger = logger.Logger(SYSLOG_IDENTIFIER)
 
 class Sfp(SfpBase):
-    PLATFORM_ROOT_PATH = "/usr/share/sonic/device"
-    PMON_HWSKU_PATH = "/usr/share/sonic/hwsku"
-    HOST_CHK_CMD = "docker > /dev/null 2>&1"
-    PLATFORM = "x86_64-marvell_db98cx8580_32cd-r0"
     HWSKU = "db98cx8580_32cd"
     _port_start = 1
     _port_end = 257
@@ -335,9 +331,6 @@ class Sfp(SfpBase):
         else:
             return 'N/A'
 
-    def __is_host(self):
-        return os.system(self.HOST_CHK_CMD) == 0
-    
     def i2c_set(self, device_addr, offset, value):
         if smbus_present == 0:
                 cmd = "i2cset -y 2 " + hex(device_addr) + " " + hex(offset) + " " + hex(value)
@@ -347,15 +340,27 @@ class Sfp(SfpBase):
                 bus.write_byte_data(device_addr, offset, value)
 
     def __get_path_to_port_config_file(self):
-        platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
-        hwsku_path = "/".join([platform_path, self.HWSKU]
-                              ) if self.__is_host() else self.PMON_HWSKU_PATH
+        """
+        Retrieve port_config.ini
+        Return:
+             get_path_to_platform_dir() : get platform path, whether we're running on container or on the host
+             Return path to port_config.ini
+        """
+        from sonic_py_common import device_info
+        platform_path = device_info.get_path_to_platform_dir()
+        hwsku_path = "/".join([platform_path, self.HWSKU])
         return "/".join([hwsku_path, "port_config.ini"])
- 
+
     def __get_path_to_sai_profile_file(self):
-        platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
-        hwsku_path = "/".join([platform_path, self.HWSKU]
-                              ) if self.__is_host() else self.PMON_HWSKU_PATH
+        """
+        Retrieve Platform path to read sai.profile
+        Return:
+             get_path_to_platform_dir() : get platform path, whether we're running on container or on the host
+             Return path to  sai.profile
+        """
+        from sonic_py_common import device_info
+        platform_path = device_info.get_path_to_platform_dir()
+        hwsku_path = "/".join([platform_path, self.HWSKU])
         return "/".join([hwsku_path, "sai.profile"])
 
     def __read_eeprom_specific_bytes(self, offset, num_bytes):
@@ -1235,7 +1240,7 @@ class Sfp(SfpBase):
         # Check for invalid port_num
         if self.port_num < self._port_start or self.port_num > self._port_end:
             return False
-        port_ps = "/sys/bus/i2c/devices/0-0050/sfp_port_reset"
+        port_ps = "/sys/bus/i2c/devices/2-0050/sfp_port_reset"
         try:
             reg_file = open(port_ps, 'w')
         except IOError as e:

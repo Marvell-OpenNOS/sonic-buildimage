@@ -146,10 +146,6 @@ class Chassis(ChassisBase):
 
     reset_reason_dict[0x08] = ChassisBase.REBOOT_CAUSE_THERMAL_OVERLOAD_CPU
     reset_reason_dict[0x10] = ChassisBase.REBOOT_CAUSE_WATCHDOG
-    PLATFORM_ROOT_PATH = "/usr/share/sonic/device"
-    PMON_HWSKU_PATH = "/usr/share/sonic/hwsku"
-    HOST_CHK_CMD = "docker > /dev/null 2>&1"
-    PLATFORM = "x86_64-marvell_db98cx8580_32cd-r0"
     HWSKU = "db98cx8580_32cd"
 
 
@@ -184,15 +180,18 @@ class Chassis(ChassisBase):
         # Instantiate ONIE system eeprom object
         self._eeprom = Eeprom()
 
-    def __is_host(self):
-        return os.system(self.HOST_CHK_CMD) == 0
-
     def __get_path_to_sai_profile_file(self):
-        platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
-        hwsku_path = "/".join([platform_path, self.HWSKU]
-                                ) if self.__is_host() else self.PMON_HWSKU_PATH
-        return "/".join([hwsku_path, "sai.profile"])
 
+        """
+        Retrieve sai.profile path.
+        Return:
+            get_path_to_platform_dir() : get platform path, whether we're running on container or on the host
+            Return path to  sai.profile
+        """
+        from sonic_py_common import device_info
+        platform_path = device_info.get_path_to_platform_dir()
+        hwsku_path = "/".join([platform_path, self.HWSKU])
+        return "/".join([hwsku_path, "sai.profile"])
 
     def get_sfp(self, index):
         """

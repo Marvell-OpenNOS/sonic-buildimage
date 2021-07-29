@@ -251,10 +251,6 @@ SYSLOG_IDENTIFIER = "xcvrd"
 sonic_logger = logger.Logger(SYSLOG_IDENTIFIER)
 
 class Sfp(SfpBase):
-    PLATFORM_ROOT_PATH = "/usr/share/sonic/device"
-    PMON_HWSKU_PATH = "/usr/share/sonic/hwsku"
-    HOST_CHK_CMD = "docker > /dev/null 2>&1"
-    PLATFORM = "x86_64-marvell_db98cx8540_16cd-r0"
     HWSKU = "db98cx8540_16cd"
     _port_start = 1
     _port_end = 132
@@ -324,8 +320,6 @@ class Sfp(SfpBase):
         else:
             return 'N/A'
 
-    def __is_host(self):
-        return os.system(self.HOST_CHK_CMD) == 0
     
     def i2c_set(self, device_addr, offset, value):
         if smbus_present == 0:
@@ -336,15 +330,27 @@ class Sfp(SfpBase):
                 bus.write_byte_data(device_addr, offset, value)
 
     def __get_path_to_port_config_file(self):
-        platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
-        hwsku_path = "/".join([platform_path, self.HWSKU]
-                              ) if self.__is_host() else self.PMON_HWSKU_PATH
+        """
+        Retrieve port_config.ini path.
+        Returns:
+             get_path_to_platform_dir() : get platform path depend on, whether we're running on container or on the host.
+             Returns port_config.ini path.
+        """
+        from sonic_py_common import device_info
+        platform_path = device_info.get_path_to_platform_dir()
+        hwsku_path = "/".join([platform_path, self.HWSKU])
         return "/".join([hwsku_path, "port_config.ini"])
- 
+
     def __get_path_to_sai_profile_file(self):
-        platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
-        hwsku_path = "/".join([platform_path, self.HWSKU]
-                              ) if self.__is_host() else self.PMON_HWSKU_PATH
+        """
+        Retrieve sai.profile path.
+        Returns:
+             get_path_to_platform_dir() : get platform path depend on, whether we're running on container or on the host.
+             Returns sai.proile path.
+        """
+        from sonic_py_common import device_info
+        platform_path = device_info.get_path_to_platform_dir()
+        hwsku_path = "/".join([platform_path, self.HWSKU])
         return "/".join([hwsku_path, "sai.profile"])
 
     def __read_eeprom_specific_bytes(self, offset, num_bytes):

@@ -118,11 +118,6 @@ SYSTEM_NOT_READY = 'system_not_ready'
 SYSTEM_READY = 'system_become_ready'
 SYSTEM_FAIL = 'system_fail'
 
-PLATFORM_ROOT_PATH = "/usr/share/sonic/device"
-PMON_HWSKU_PATH = "/usr/share/sonic/hwsku"
-HOST_CHK_CMD = "docker > /dev/null 2>&1"
-PLATFORM = "x86_64-marvell_db98cx8540_16cd-r0"
-HWSKU = "db98cx8540_16cd"
 
 # SFP PORT numbers
 SFP_PORT_START = 1
@@ -135,19 +130,13 @@ sonic_logger = logger.Logger(SYSLOG_IDENTIFIER)
 class sfp_event:
     ''' Listen to plugin/plugout cable events '''
 
-
+    HWSKU = "db98cx8540_16cd"
     def __init__(self):
         
         self.handle = None
         self.port_to_eeprom_mapping = {}
         self.SFP_PORT_START=SFP_PORT_START
         self.SFP_PORT_END=SFP_PORT_END
-        self.PLATFORM_ROOT_PATH=PLATFORM_ROOT_PATH
-        self.PLATFORM=PLATFORM
-        self.PMON_HWSKU_PATH=PMON_HWSKU_PATH
-        self.HOST_CHK_CMD = HOST_CHK_CMD
-        self.HWSKU = HWSKU
-
         eeprom_path="/sys/bus/i2c/devices/2-0050/eeprom"
 
         x = self.SFP_PORT_START
@@ -168,9 +157,6 @@ class sfp_event:
     def deinitialize(self):
         if self.handle is None:
             return
-
-    def __is_host(self):
-        return os.system(self.HOST_CHK_CMD) == 0
 
     def i2c_set(self, device_addr, offset, value):
         if smbus_present == 0:
@@ -207,9 +193,15 @@ class sfp_event:
         return sfp_status
 
     def __get_path_to_sai_file(self):
-        platform_path = "/".join([self.PLATFORM_ROOT_PATH, self.PLATFORM])
-        hwsku_path = "/".join([platform_path, self.HWSKU]
-                              ) if self.__is_host() else self.PMON_HWSKU_PATH
+        """
+        Retrieve sai.profile path
+        Returns:
+             get_path_to_platform_dir() : get platform path depend on, whether we're running on container or on the host.
+             Returns sai.proile path.
+        """
+        from sonic_py_common import device_info
+        platform_path = device_info.get_path_to_platform_dir()
+        hwsku_path = "/".join([platform_path, self.HWSKU])
         return "/".join([hwsku_path, "sai.profile"])
 
     def check_sfp_status(self, port_change, timeout):
