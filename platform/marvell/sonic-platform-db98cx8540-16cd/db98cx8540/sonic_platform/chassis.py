@@ -11,10 +11,12 @@ try:
     from sonic_platform.sfp import Sfp
     from sonic_platform.eeprom import Eeprom
     from sonic_py_common import logger
+    from sonic_platform.component import Component
 
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
 
+MAX_COMPONENT=2
 MAX_SELECT_DELAY = 3600
 SFP_PORT_START = 1
 SFP_PORT_END = 132
@@ -163,6 +165,9 @@ class Chassis(ChassisBase):
         # Instantiate ONIE system eeprom object
         self._eeprom = Eeprom()
 
+        for i in range(MAX_COMPONENT):
+            component = Component(i)
+            self._component_list.append(component)
 
     def __get_path_to_sai_profile_file(self):
         """
