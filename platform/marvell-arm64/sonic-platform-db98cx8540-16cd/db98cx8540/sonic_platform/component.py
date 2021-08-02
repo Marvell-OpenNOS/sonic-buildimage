@@ -24,6 +24,7 @@ class Component(ComponentBase):
 
     CHASSIS_COMPONENTS = [
         ["U-Boot", "Performs initialization during booting"],
+        ["ONIE-VERSION", "ONIE - Open Network Install Environment"],
     ]
 
     def __init__(self, component_index):
@@ -73,6 +74,9 @@ class Component(ComponentBase):
         if self.index == 0:
             cmdstatus, uboot_version = cmd.getstatusoutput('grep --null-data U-Boot /dev/mtd0ro|head -2 | cut -d" " -f2')
             return uboot_version
+        if self.index == 1:
+            cmdstatus, onie_version = cmd.getstatusoutput('grep ^onie_version /host/machine.conf | cut -f2 -d"="')
+            return onie_version
 
     def install_firmware(self, image_path):
         """

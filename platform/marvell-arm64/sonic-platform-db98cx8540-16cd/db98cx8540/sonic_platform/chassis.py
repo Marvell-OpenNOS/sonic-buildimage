@@ -11,6 +11,7 @@ try:
     from sonic_platform.sfp import Sfp
     from sonic_platform.eeprom import Eeprom
     from sonic_py_common import logger
+    from sonic_platform.component import Component
 
 except ImportError as e:
     raise ImportError(str(e) + "- required module not found")
@@ -21,7 +22,7 @@ COPPER_PORT_END = 0
 SFP_PORT_START = 1
 SFP_PORT_END = 132
 PORT_END = 132
-
+MAX_COMPONENT=2
 
 profile_16x400G = {
   0:"0x70,4",   1:"0x70,4",   2:"0x70,4",   3:"0x70,4",   4:"0x70,4",   5:"0x70,4",   6:"0x70,4",   7:"0x70,4",
@@ -170,6 +171,10 @@ class Chassis(ChassisBase):
 
         # Instantiate ONIE system eeprom object
         self._eeprom = Eeprom()
+
+        for i in range(MAX_COMPONENT):
+            component = Component(i)
+            self._component_list.append(component)
 
     def __is_host(self):
         return os.system(self.HOST_CHK_CMD) == 0
