@@ -1,0 +1,5 @@
+db98cx8540/scripts/db98cx8540-16cd-init.sh  usr/local/bin
+db98cx8540/service/db98cx8540-16cd-init.service etc/systemd/system
+db98cx8540/sonic_platform-1.0-py3-none-any.whl usr/share/sonic/device/arm64-marvell_db98cx8540_16cd-r0
+db98cx8540/sonic_platform-1.0-py2-none-any.whl usr/share/sonic/device/arm64-marvell_db98cx8540_16cd-r0
+

@@ -1,0 +1,10 @@
+#!/bin/sh
+# postinst script for sonic-platform-db98cx8540-16cd
+#
+# see: dh_installdeb(1)
+
+chmod a+x /usr/local/bin/db98cx8540-16cd-init.sh
+systemctl enable db98cx8540-16cd-init.service
+systemctl start db98cx8540-16cd-init.service
+exit 0
+
