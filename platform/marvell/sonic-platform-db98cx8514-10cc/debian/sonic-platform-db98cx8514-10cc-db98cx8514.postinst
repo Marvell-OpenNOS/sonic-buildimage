@@ -1,5 +1,5 @@
 #!/bin/sh
-# postinst script for sonic-platform-db98cx8540-16cd
+# postinst script for sonic-platform-db98cx8514-10cc
 #
 # see: dh_installdeb(1)
 
