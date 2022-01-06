@@ -6,9 +6,9 @@
 include /usr/share/dpkg/pkg-info.mk
 #--------------------------------------------------------
 
-PACKAGE_PRE_NAME := sonic-platform-db98cx8540-16cd
+PACKAGE_PRE_NAME := sonic-platform-db98cx8514-10cc
 MOD_SRC_DIR:= $(shell pwd)
-MODULE_DIRS:= db98cx8540
+MODULE_DIRS:= db98cx8514
 UTILS_DIR := utils
 SERVICE_DIR := service
 PLATFORM_DIR := sonic_platform

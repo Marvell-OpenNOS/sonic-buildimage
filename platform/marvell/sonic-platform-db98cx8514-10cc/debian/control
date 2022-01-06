@@ -1,4 +1,4 @@
-Source: sonic-platform-db98cx8540-16cd-db98cx8540
+Source: sonic-platform-db98cx8514-10cc-db98cx8514
 Section: unknown
 Priority: optional
 Maintainer: Marvell
@@ -6,7 +6,7 @@ Build-Depends: debhelper (>=9)
 Standards-Version: 3.9.6
 Homepage: <insert the upstream URL, if relevant>
 
-Package: sonic-platform-db98cx8540-16cd-db98cx8540
+Package: sonic-platform-db98cx8514-10cc-db98cx8514
 Architecture: amd64
 Depends: ${misc:Depends}
 Description: <insert up to 60 chars description>
